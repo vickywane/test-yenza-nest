@@ -1,6 +1,6 @@
 # YYENZA Backend Application
 
-This is the main backend application for yyenza. It is a multi-modular gradle based spring boot project. Check [here](https://insert-notion-doc-link.com) for more details
+This is the main NestJS application for yyenza.
 
 ## Tech
 - Node 20
