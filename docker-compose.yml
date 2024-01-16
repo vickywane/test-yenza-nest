@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: yyenza-nest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+  db:
+    image: 'postgres:16'
+    container_name: yyenza-pg
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=yyenza
+      - POSTGRES_PASSWORD=yyenza
+      - POSTGRES_DB=yyenza-nest
+    ports:
+      - '5432:5432'
+volumes:
+  postgres_data:
