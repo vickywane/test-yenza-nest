@@ -15,9 +15,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=yyenza
-      - POSTGRES_PASSWORD=yyenza
-      - POSTGRES_DB=yyenza-nest
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=yyenzanest
     ports:
       - '5432:5432'
 volumes:
