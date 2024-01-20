@@ -8,6 +8,14 @@ services:
       - "3000:3000"
     depends_on:
       - db
+    environment:
+      - PLAID_CLIENT_ID=${PLAID_CLIENT_ID}
+      - PLAID_SECRET=${PLAID_SECRET}
+      - PLAID_ENV=${PLAID_ENV}
+      - PLAID_PRODUCTS=${PLAID_PRODUCTS}
+      - PLAID_COUNTRY_CODES=${PLAID_COUNTRY_CODES}
+      - PLAID_REDIRECT_URI=${PLAID_REDIRECT_URI}
+      - DATABASE_URL=${DATABASE_URL}
   db:
     image: 'postgres:16'
     container_name: yyenza-pg
