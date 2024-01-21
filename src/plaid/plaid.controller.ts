@@ -17,14 +17,15 @@ export class PlaidController {
       res.json(response);
     } catch (error) {
       next(error);
+      throw new Error(error);
     }
   }
 
-  @Post('access-token')
+  @Post('link-accounts')
   // Exchange token flow - exchange a Link public_token for access token
   // See https://plaid.com/docs/#exchange-token-flow
-  async getAccessToken(
-    @Body() body: LinkSuccess,
+  async updateLinkAccounts(
+    @Body() body: LinkSuccess & { phoneNumber: string },
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -32,10 +33,15 @@ export class PlaidController {
       if (!body.publicToken) {
         throw new Error('Public token is required');
       }
-      const response = await this.plaidService.getAccessToken(body.publicToken);
+      const response = await this.plaidService.updateLinkAccounts(
+        body.publicToken,
+        body.metadata,
+        body.phoneNumber,
+      );
       res.json(response);
     } catch (error) {
       next(error);
+      throw new Error(error);
     }
   }
 }

@@ -2,26 +2,28 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 model User {
-  id      Int      @id @default(autoincrement())
-  authId  String   @unique @db.VarChar(255)
-  authMethod AuthMethod @default(AWS_COGNITO)
-  givenName String @db.VarChar(255)
-  familyName String @db.VarChar(255)
-  email   String   @unique @db.VarChar(255)
-  idvUserConsent Boolean @default(false)
-  idvUserConsentDate DateTime?
-  idvUserId String? @unique @db.VarChar(255)
-  phoneNumber String @unique @db.VarChar(255)
-  phoneNumberVerified Boolean @default(false)
-  emailVerified Boolean @default(false)
-  kycStatus KYCStatus? @default(unverified)
-  dateOfBirth DateTime
-  addressId String?
-  address Address?  @relation(fields: [addressId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  linkedAccounts LinkedAccount[]
-  linkedInstitutions LinkInstitution[]
+  id                  Int               @id @default(autoincrement())
+  authId              String?           @unique @db.VarChar(255)
+  authMethod          AuthMethod        @default(AWS_COGNITO)
+  givenName           String            @db.VarChar(255)
+  familyName          String            @db.VarChar(255)
+  email               String?           @unique @db.VarChar(255)
+  idvUserConsent      Boolean?          @default(false)
+  idvUserConsentDate  DateTime?
+  idvUserId           String?           @unique @db.VarChar(255)
+  phoneNumber         String            @unique @db.VarChar(255)
+  phoneNumberVerified Boolean           @default(false)
+  emailVerified       Boolean?          @default(false)
+  kycStatus           KYCStatus         @default(unverified)
+  dateOfBirth         DateTime?
+  addressId           String?
+  address             Address?
+  linkedAccounts      LinkedAccount[]
+  linkedInstitutions  LinkInstitution[]
+  plaidPublicToken    String?           @db.VarChar(255)
+  plaidAccessToken    String?           @db.VarChar(255)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 }
 
 enum AuthMethod {
@@ -29,29 +31,48 @@ enum AuthMethod {
 }
 
 enum KYCStatus {
-  unverified 
+  unverified
   pending
   approved
   rejected
 }
 
 model LinkedAccount {
-  id      Int      @id @default(autoincrement())
-  userId  Int
-  user User @relation(fields: [userId], references: [id])
-  name String? @db.VarChar(255)
-  mask  String? @db.VarChar(255)  // last 2-4 alphanumeric characters of an account's official account number
-  type LinkAccountType
-  subtype LinkAccountSubtype
+  id                 Int                           @id @default(autoincrement())
+  plaidAccountId     String                        @unique @db.VarChar(255)
+  userId             Int                           @unique
+  user               User                          @relation(fields: [userId], references: [id])
+  name               String?                       @db.VarChar(255)
+  officialName       String?                       @db.VarChar(255)
+  mask               String?                       @db.VarChar(255) // last 2-4 alphanumeric characters of an account's official account number
+  type               LinkAccountType
+  subtype            String?                       @db.VarChar(255)
   verificationStatus LinkAccountVerificationStatus @default(pending_automatic_verification)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  balances           Balances?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  linkInstitutionId  Int                           @unique
+  linkInstitution    LinkInstitution               @relation(fields: [linkInstitutionId], references: [id])
+}
+
+model Balances {
+  id                     Int           @id @default(autoincrement())
+  available              Decimal       @db.Decimal(10, 2)
+  current                Decimal       @db.Decimal(10, 2)
+  limit                  Decimal       @db.Decimal(10, 2)
+  isoCurrencyCode        String        @db.VarChar(255)
+  unofficialCurrencyCode String        @db.VarChar(255)
+  plaidAccountId         String        @unique
+  linkedAccount          LinkedAccount @relation(fields: [plaidAccountId], references: [plaidAccountId])
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 }
 
 model LinkInstitution {
-  id      Int      @id @default(autoincrement())
-  name String @db.VarChar(255)
-  users User[]
+  id       Int             @id @default(autoincrement())
+  name     String          @db.VarChar(255)
+  users    User[]
+  accounts LinkedAccount[]
 }
 
 enum LinkAccountType {
@@ -138,19 +159,18 @@ enum LinkAccountVerificationStatus {
 }
 
 model Address {
-  id      String   @id @default(uuid())
-  street String @db.VarChar(255)
-  street2 String @db.VarChar(255)
-  city String @db.VarChar(255)
-  state String @db.VarChar(255)
-  postCode String @db.VarChar(255)
-  country String @db.VarChar(255)
+  id        String   @id @default(uuid())
+  street    String   @db.VarChar(255)
+  street2   String   @db.VarChar(255)
+  city      String   @db.VarChar(255)
+  state     String   @db.VarChar(255)
+  postCode  String   @db.VarChar(255)
+  country   String   @db.VarChar(255)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users User[]
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
 }
-
-
 
 generator client {
   provider = "prisma-client-js"
