@@ -485,3 +485,8 @@ export interface PlaidLinkProps {
   logLevel?: LinkLogLevel;
   onPress?(): any;
 }
+
+export interface SignUpUser {
+  phoneNumber: string;
+  email: string;
+}

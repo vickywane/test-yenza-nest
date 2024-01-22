@@ -8,8 +8,11 @@ import {
   LinkTokenCreateRequest,
 } from 'plaid';
 import { PrismaClient } from '@prisma/client';
-import { User } from './entities/plaid.entity';
-import { LinkAccount, LinkSuccessMetadata } from './plaid.interface';
+import {
+  LinkAccount,
+  LinkSuccessMetadata,
+  SignUpUser,
+} from './plaid.interface';
 
 const dotenv = require('dotenv');
 dotenv?.config();
@@ -71,41 +74,46 @@ export class PlaidService {
   }
 
   async getAccessToken(userId: number, publicToken?: string) {
-    return Promise.resolve().then(async function () {
-      try {
-        const user = await prisma.user.findFirst({
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+
+      const publicTokenFromDb = user?.plaidPublicToken || '';
+
+      const tokenResponse = await client.itemPublicTokenExchange({
+        public_token: publicToken || publicTokenFromDb,
+      });
+      const accessToken = tokenResponse.data.access_token;
+
+      if (accessToken) {
+        await prisma.user.update({
           where: {
             id: userId,
           },
+          data: {
+            plaidAccessToken: accessToken,
+          },
         });
-
-        const publicTokenFromDb = user?.plaidPublicToken || '';
-
-        const tokenResponse = await client.itemPublicTokenExchange({
-          public_token: publicToken || publicTokenFromDb,
-        });
-        const accessToken = tokenResponse.data.access_token;
-
-        if (accessToken) {
-          await prisma.user.update({
-            where: {
-              id: userId,
-            },
-            data: {
-              plaidAccessToken: accessToken,
-            },
-          });
-        }
-
-        const itemId = tokenResponse.data.item_id;
-        return { accessToken, itemId };
-      } catch (error) {
-        console.log('error', error.response);
-        throw new Error(error.response);
       }
-    });
+
+      const itemId = tokenResponse.data.item_id;
+      return { accessToken, itemId };
+    } catch (error) {
+      console.log('error', error.response);
+      throw new Error(error.response);
+    }
   }
 
+  /**
+   * Update link accounts, institutions, request and save access token
+   * @param publicToken
+   * @param linkAccounts
+   * @param phoneNumber
+   * @returns User
+   */
   async updateLinkAccounts(
     publicToken: string,
     linkAccounts: LinkSuccessMetadata,
@@ -120,6 +128,7 @@ export class PlaidService {
         },
         include: {
           linkedAccounts: true,
+          linkedInstitutions: true,
         },
       });
 
@@ -127,21 +136,22 @@ export class PlaidService {
         // update institution
         await prisma.linkInstitution.upsert({
           where: {
-            id: Number(institution.id),
+            plaidInstitutionId: institution.id,
           },
           update: {
             name: institution.name,
           },
           create: {
-            id: Number(institution.id),
+            plaidInstitutionId: institution.id,
             name: institution.name,
+            updatedAt: new Date(),
           },
         });
       }
 
       if (user) {
         // update linked accounts
-        const existingAccountIds = user.linkedAccounts.map((account) =>
+        const existingAccountIds = user.linkedAccounts.map((account: any) =>
           account.id.toString(),
         );
         // filter out existing accounts
@@ -159,16 +169,14 @@ export class PlaidService {
               subtype: account.subtype.toString(),
               type: account.type as LinkAccount['type'],
               userId: user.id,
-              linkInstitutionId: Number(institution?.id),
+              plaidInstitutionId: institution?.id || '',
             })),
           });
         }
 
-        // update account balances
-        await this.identityGetAndUpdate(user.id);
-
         if (publicToken) {
           // update public token of the user
+          console.log('publicToken', publicToken);
           await prisma.user.update({
             where: {
               id: user.id,
@@ -179,9 +187,13 @@ export class PlaidService {
           });
 
           // get access token and update access token of the user
-          await this.getAccessToken(user.id, publicToken);
+          const res = await this.getAccessToken(user.id, publicToken);
+          console.log('getAccessToken', res);
+          if (res.accessToken) {
+            // update account balances
+            await this.identityGetAndUpdate(user.id);
+          }
         }
-
         return user;
       }
     } catch (error) {
@@ -190,7 +202,7 @@ export class PlaidService {
     }
   }
 
-  async createNewUser(user: User) {
+  async createNewUser(user: SignUpUser) {
     try {
       const userExist = !!(await prisma.user.findFirst({
         where: {
@@ -210,38 +222,38 @@ export class PlaidService {
 
       const newUser = await prisma.user.create({
         data: {
-          givenName: user.givenName,
-          familyName: user.familyName,
+          // givenName: user.givenName || '',
+          // familyName: user.familyName || '',
           email: user.email,
           phoneNumber: user.phoneNumber,
-          dateOfBirth: user.dateOfBirth,
+          // dateOfBirth: user.dateOfBirth || '',
         },
       });
 
-      if (user.address) {
-        await prisma.address.upsert({
-          where: {
-            userId: newUser.id,
-          },
-          update: {
-            street: user.address.street,
-            street2: user.address.street2,
-            city: user.address.city,
-            state: user.address.state,
-            postCode: user.address.postCode,
-            country: user.address.country,
-          },
-          create: {
-            street: user.address.street,
-            street2: user.address.street2,
-            city: user.address.city,
-            state: user.address.state,
-            postCode: user.address.postCode,
-            userId: newUser.id,
-            country: user.address.country,
-          },
-        });
-      }
+      // if (user.address) {
+      //   await prisma.address.upsert({
+      //     where: {
+      //       userId: newUser.id,
+      //     },
+      //     update: {
+      //       street: user.address.street,
+      //       street2: user.address.street2,
+      //       city: user.address.city,
+      //       state: user.address.state,
+      //       postCode: user.address.postCode,
+      //       country: user.address.country,
+      //     },
+      //     create: {
+      //       street: user.address.street,
+      //       street2: user.address.street2 || '',
+      //       city: user.address.city,
+      //       state: user.address.state,
+      //       postCode: user.address.postCode,
+      //       userId: newUser.id,
+      //       country: user.address.country,
+      //     },
+      //   });
+      // }
 
       return newUser;
     } catch (error) {
@@ -275,34 +287,94 @@ export class PlaidService {
       });
 
       if (response.data.accounts.length > 0) {
-        const accountsUpdate = response.data.accounts.map((account) => {
-          return {
-            plaidAccountId: account.account_id,
-            name: account.name,
-            officialName: account.official_name,
-            mask: account.mask,
-            subtype: account.subtype,
-            type: account.type,
-            updatedAt: new Date(),
-            balances: {
-              available: account.balances.available,
-              current: account.balances.current,
-              limit: account.balances.limit,
-              isoCurrencyCode: account.balances.iso_currency_code,
-              unofficialCurrencyCode: account.balances.unofficial_currency_code,
+        response.data.accounts.forEach(async (account) => {
+          await prisma.linkedAccount.update({
+            where: {
               plaidAccountId: account.account_id,
-              updatedAt: new Date(),
+              userId: user.id,
             },
-            userId: user.id,
-          };
+            data: {
+              plaidAccountId: account.account_id,
+              name: account.name,
+              officialName: account.official_name,
+              mask: account.mask,
+              subtype: account.subtype,
+              type: account.type,
+              updatedAt: new Date(),
+              userId: user.id,
+              balances: {
+                create: {
+                  available: account.balances.available,
+                  current: account.balances.current,
+                  limit: account.balances.limit,
+                  isoCurrencyCode: account.balances.iso_currency_code,
+                  unofficialCurrencyCode:
+                    account.balances.unofficial_currency_code,
+                  updatedAt: new Date(),
+                },
+              },
+            },
+          });
         });
+      }
+    } catch (error) {
+      console.log('error', error);
+      throw new Error(error);
+    }
+  }
 
-        await prisma.linkedAccount.updateMany({
+  async getAccounts(userId: number) {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          phoneNumber: true,
+          email: true,
+          linkedAccounts: true,
+          linkedInstitutions: true,
+        },
+      });
+      if (user) {
+        const linkedInstitutionsIds = user.linkedAccounts.map(
+          (account) => account.plaidInstitutionId,
+        );
+        const plaidAccountIds = user.linkedAccounts.map(
+          (account) => account.plaidAccountId,
+        );
+        const linkedInstitutions = await prisma.linkInstitution.findMany({
           where: {
-            userId: user.id,
+            plaidInstitutionId: {
+              in: linkedInstitutionsIds,
+            },
           },
-          data: accountsUpdate,
         });
+        const balances = await prisma.balances.findMany({
+          where: {
+            plaidAccountId: {
+              in: plaidAccountIds,
+            },
+          },
+        });
+        const userResponse = {
+          ...user,
+          linkedInstitutions,
+          linkedAccounts: user.linkedAccounts.map((account) => ({
+            ...account,
+            institution: linkedInstitutions.find(
+              (institution) =>
+                institution.plaidInstitutionId === account.plaidInstitutionId,
+            ),
+            balances: balances.find(
+              (balance) => balance.plaidAccountId === account.plaidAccountId,
+            ),
+          })),
+        };
+        return userResponse;
+      } else {
+        throw new Error('User not found');
       }
     } catch (error) {
       console.log('error', error);
