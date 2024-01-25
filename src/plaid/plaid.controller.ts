@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Next, Param, Post, Res } from '@nestjs/common';
 import { NextFunction, Response } from 'express';
 import { PlaidService } from './plaid.service';
-import { LinkSuccess, SignUpUser } from './plaid.interface';
+import { LinkSuccess } from './plaid.interface';
 
 @Controller('plaid')
 export class PlaidController {
@@ -45,32 +45,16 @@ export class PlaidController {
     }
   }
 
-  @Post('sign-up')
-  async signUp(
-    @Body() body: SignUpUser,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ) {
-    try {
-      if (!body.phoneNumber || !body.email) {
-        throw new Error('Phone number and email are required');
-      }
-      const response = await this.plaidService.createNewUser(body);
-      res.json(response);
-    } catch (error) {
-      next(error);
-      throw new Error(error);
-    }
-  }
-
   @Get('accounts/:userId')
-  async getAccounts(
+  async getLinkedBankAccounts(
     @Param('userId') userId: string,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
-      const response = await this.plaidService.getAccounts(Number(userId));
+      const response = await this.plaidService.getLinkedBankAccounts(
+        Number(userId),
+      );
       console.log('userResponse', response);
       res.json(response);
     } catch (error) {

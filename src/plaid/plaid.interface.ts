@@ -490,3 +490,273 @@ export interface SignUpUser {
   phoneNumber: string;
   email: string;
 }
+
+export interface IdentityVerificationCreateRequest {
+  client_user_id: string;
+  is_shareable: boolean;
+  template_id: string;
+  gave_consent: boolean;
+  user: IdvUser;
+}
+
+export interface IdvUser {
+  email_address: string;
+  phone_number: string;
+  date_of_birth: string;
+  name: {
+    given_name: string;
+    family_name: string;
+  };
+  address: IdvAddress;
+  id_number: {
+    value: string;
+    type: string;
+  };
+}
+
+export interface IdvAddress {
+  street: string;
+  street2: string;
+  city: string;
+  region: string;
+  postal_code: string;
+  country: string;
+}
+
+export interface IdentityVerificationCreateResponse {
+  id: string;
+  client_user_id: string;
+  created_at: string;
+  completed_at: string;
+  previous_attempt_id: string;
+  shareable_url: string;
+  template: {
+    id: string;
+    version: number;
+  };
+  user: IdvUserResponse;
+  status: IdentityVerificationStatus;
+  steps: {
+    accept_tos: IdentityVerificationStepStatus;
+    verify_sms: IdentityVerificationStepStatus;
+    kyc_check: IdentityVerificationStepStatus;
+    documentary_verification: IdentityVerificationStepStatus;
+    selfie_check: IdentityVerificationStepStatus;
+    watchlist_screening: IdentityVerificationStepStatus;
+    risk_check: IdentityVerificationStepStatus;
+  };
+  documentary_verification: {
+    status: IdentityVerificationStepStatus;
+    documents: [
+      {
+        status: DocumentaryVerificationStatus;
+        attempt: number;
+        images: {
+          original_front: string;
+          original_back: string;
+          cropped_front: string;
+          cropped_back: string;
+          face: string;
+        };
+        extracted_data: {
+          id_number: string;
+          category: string;
+          expiration_date: string;
+          issuing_country: string;
+          issuing_region: string;
+          date_of_birth: string;
+          address: {
+            street: string;
+            city: string;
+            region: string;
+            postal_code: string;
+            country: string;
+          };
+        };
+        analysis: {
+          authenticity: Authenticity;
+          image_quality: 'high' | 'medium' | 'low';
+          extracted_data: {
+            name: Omit<Authenticity, 'NO_DATA'>;
+            date_of_birth: Omit<Authenticity, 'NO_DATA'>;
+            expiration_date: 'not_expired' | 'expired' | 'no_data';
+            issuing_country: 'match' | 'no_match';
+          };
+        };
+        redacted_at: string;
+      },
+    ];
+  };
+  selfie_check: {
+    status: IdentityVerificationStepStatus;
+    selfies: [
+      {
+        status: 'success' | 'failed';
+        attempt: number;
+        capture: {
+          image_url: string;
+          video_url: string;
+        };
+        analysis: {
+          document_comparison: 'match' | 'no_match' | 'no_input';
+        };
+      },
+    ];
+  };
+  kyc_check: {
+    status: IdentityVerificationStepStatus;
+    address: {
+      summary: KycSummaryStatus;
+      po_box: 'yes' | 'no' | 'no_data';
+      type: 'residential' | 'commercial' | 'no_data';
+    };
+    name: {
+      summary: KycSummaryStatus;
+    };
+    date_of_birth: {
+      summary: KycSummaryStatus;
+    };
+    id_number: {
+      summary: KycSummaryStatus;
+    };
+    phone_number: {
+      summary: KycSummaryStatus;
+    };
+  };
+  risk_check: {
+    status: IdentityVerificationStepStatus;
+    behavior: {
+      user_interaction: UserInteraction;
+      fraud_ring_detected: 'yes' | 'no' | 'no_data';
+      bot_detected: 'yes' | 'no' | 'no_data';
+    };
+    email: {
+      is_deliverable: 'yes' | 'no' | 'no_data';
+      breach_count: number;
+      first_breached_at: string;
+      last_breached_at: string;
+      domain_registered_at: string;
+      domain_is_free_provider: 'yes' | 'no' | 'no_data';
+      domain_is_custom: 'yes' | 'no' | 'no_data';
+      domain_is_disposable: 'yes' | 'no' | 'no_data';
+      top_level_domain_is_suspicious: 'yes' | 'no' | 'no_data';
+      linked_services: string[];
+    };
+    phone: {
+      linked_services: string[];
+    };
+    devices: [
+      {
+        ip_proxy_type: string;
+        ip_spam_lisy_count: number;
+        ip_timezone_offset: string;
+      },
+    ];
+    identity_abuse_signals: {
+      synthetic_identity: {
+        score: number;
+      };
+      stolen_identity: {
+        score: number;
+      };
+    };
+  };
+  watchlist_screening_id: string;
+  redacted_at: string;
+  request_id: string;
+}
+
+export interface IdentityVerificationGetRequest {
+  identity_verification_id: string;
+  secret: string;
+  client_id: string;
+}
+
+export interface IdentityVerificationListRequest {
+  template_id: string;
+  secret?: string;
+  client_id?: string;
+  client_user_id: string;
+  cursor?: string;
+}
+
+export interface IdentityVerificationListResponse {
+  identity_verifications: IdentityVerificationCreateResponse[];
+  next_cursor: string;
+  request_id: string;
+}
+
+export interface IdentityVerificationRetryRequest {
+  client_user_id: string;
+  template_id: string;
+  strategy: 'reset' | 'incomplete' | 'infer' | 'custom';
+  user: IdvUser;
+  steps: {
+    verify_sms: boolean;
+    kyc_check: boolean;
+    documentary_verification: boolean;
+    selfie_check: boolean;
+  };
+  client_id: string;
+  secret: string;
+}
+
+export type IdentityVerificationResponse = IdentityVerificationCreateResponse;
+
+export type IdentityVerificationGetResponse =
+  IdentityVerificationCreateResponse;
+
+export type IdvUserResponse = IdvUser & {
+  ip_address: string;
+};
+
+export enum IdentityVerificationStatus {
+  ACTIVE = 'active',
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  EXPIRED = 'expired',
+  CANCELED = 'canceled',
+  PENDING_REVIEW = 'pending_review',
+}
+
+export enum IdentityVerificationStepStatus {
+  SUCCESS = 'success',
+  ACTIVE = 'active',
+  FAILED = 'failed',
+  WAITING_FOR_PREREQUISITE = 'waiting_for_prerequisite',
+  NOT_APPLICABLE = 'not_applicable',
+  SKIPPED = 'skipped',
+  EXPIRED = 'expired',
+  CANCELED = 'canceled',
+  PENDING_REVIEW = 'pending_review',
+  MANUALLY_APPROVED = 'manually_approved',
+  MANUALLY_REJECTED = 'manually_rejected',
+}
+
+export enum DocumentaryVerificationStatus {
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  MANUALLY_APPROVED = 'manually_approved',
+}
+
+export enum Authenticity {
+  MATCH = 'match',
+  PARTIAL_MATCH = 'partial_match',
+  NO_MATCH = 'no_match',
+  NO_DATA = 'no_data',
+}
+
+export enum KycSummaryStatus {
+  MATCH = 'match',
+  PARTIAL_MATCH = 'partial_match',
+  NO_MATCH = 'no_match',
+  NO_DATA = 'no_data',
+  NO_INPUT = 'no_input',
+}
+
+export enum UserInteraction {
+  GENUINE = 'genuine',
+  NEUTRAL = 'neutral',
+  RISKY = 'risky',
+  NO_DATA = 'no_data',
+}
