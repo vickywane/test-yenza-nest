@@ -497,6 +497,7 @@ export interface IdentityVerificationCreateRequest {
   template_id: string;
   gave_consent: boolean;
   user: IdvUser;
+  secret?: string;
 }
 
 export interface IdvUser {

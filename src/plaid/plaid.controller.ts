@@ -62,4 +62,72 @@ export class PlaidController {
       throw new Error(error);
     }
   }
+
+  @Post('identity-verification/create/:userId')
+  async createIdentityVerification(
+    @Param('userId') userId: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const response = await this.plaidService.createIdentityVerification(
+        Number(userId),
+      );
+      res.json(response);
+    } catch (error) {
+      next(error);
+      throw new Error(error);
+    }
+  }
+
+  @Get('identity-verification/:userId')
+  async getIdentityVerification(
+    @Param('userId') userId: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const response = await this.plaidService.getIdentityVerification(
+        Number(userId),
+      );
+      res.json(response);
+    } catch (error) {
+      next(error);
+      throw new Error(error);
+    }
+  }
+
+  @Post('identity-verification/list/:userId')
+  async listIdentityVerification(
+    @Param('userId') userId: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const response = await this.plaidService.listIdentityVerification(
+        Number(userId),
+      );
+      res.json(response);
+    } catch (error) {
+      next(error);
+      throw new Error(error);
+    }
+  }
+
+  @Post('identity-verification/retry/:userId')
+  async retryIdentityVerification(
+    @Param('userId') userId: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const response = await this.plaidService.retryIdentityVerification(
+        Number(userId),
+      );
+      res.json(response);
+    } catch (error) {
+      next(error);
+      throw new Error(error);
+    }
+  }
 }

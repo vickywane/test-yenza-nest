@@ -15,7 +15,7 @@ model User {
   phoneNumberVerified Boolean?           @default(false)
   emailVerified       Boolean?          @default(false)
   kycStatus           KYCStatus?         @default(unverified)
-  dateOfBirth         DateTime?
+  dateOfBirth         String?
   addressId           String?
   address             Address?
   linkedAccounts      LinkedAccount[]
@@ -24,6 +24,8 @@ model User {
   plaidAccessToken    String?           @db.VarChar(255)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
+  plaidClientId       String?           @db.VarChar(255)
+  documentId          DocumentId?
 }
 
 enum AuthMethod {
@@ -35,6 +37,17 @@ enum KYCStatus {
   pending
   approved
   rejected
+}
+
+model DocumentId {
+  id        Int   @id @default(autoincrement())
+  docId    Int      @unique
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+  value     String   @db.VarChar(255)
+  type      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model LinkedAccount {

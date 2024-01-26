@@ -6,9 +6,20 @@ import {
   PlaidEnvironments,
   CountryCode,
   LinkTokenCreateRequest,
+  IdentityVerificationCreateRequest,
+  IdentityVerificationCreateResponse,
+  IDNumberType,
+  IdentityVerificationGetRequest,
+  IdentityVerificationGetResponse,
+  IdentityVerificationListRequest,
+  IdentityVerificationListResponse,
+  IdentityVerificationRetryRequest,
+  Strategy,
+  IdentityVerificationRetryResponse,
 } from 'plaid';
 import { PrismaClient } from '@prisma/client';
 import { LinkAccount, LinkSuccessMetadata } from './plaid.interface';
+import { format } from 'date-fns';
 
 const dotenv = require('dotenv');
 dotenv?.config();
@@ -25,6 +36,7 @@ const PLAID_ENV: string = 'sandbox';
 const PLAID_CLIENT_ID: string | undefined = process.env
   .PLAID_CLIENT_ID as string;
 const PLAID_SECRET: string | undefined = process.env.PLAID_SECRET as string;
+const PLAID_IDV_TEMPLATE_ID = process.env.PLAID_IDV_TEMPLATE_ID as string;
 // const ACCESS_TOKEN: string | null = null;
 // const PUBLIC_TOKEN: string | null = null;
 
@@ -311,6 +323,222 @@ export class PlaidService {
         return userResponse;
       } else {
         throw new Error('User not found');
+      }
+    } catch (error) {
+      console.log('error', error);
+      throw new Error(error);
+    }
+  }
+
+  async createIdentityVerification(userId: number) {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          phoneNumber: true,
+          phoneNumberVerified: true,
+          email: true,
+          address: true,
+          plaidClientId: true,
+          idvUserConsent: true,
+          dateOfBirth: true,
+          givenName: true,
+          familyName: true,
+          documentId: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (
+        user.idvUserConsent === false ||
+        user.dateOfBirth === null ||
+        user.givenName === null ||
+        user.familyName === null ||
+        user.documentId === null
+      ) {
+        throw new Error('User data not available');
+      }
+
+      const request: IdentityVerificationCreateRequest = {
+        secret: PLAID_SECRET,
+        template_id: PLAID_IDV_TEMPLATE_ID,
+        is_shareable: true,
+        gave_consent: user.idvUserConsent || false,
+        is_idempotent: true,
+        user: {
+          client_user_id: user.id.toString() || '',
+          email_address: user.email,
+          phone_number: user.phoneNumber,
+          date_of_birth: format(new Date(user.dateOfBirth), 'yyyy-MM-dd'),
+          name: {
+            given_name: user.givenName,
+            family_name: user.familyName,
+          },
+          address: {
+            street: user.address?.street || '',
+            street2: user.address?.street2 || '',
+            city: user.address?.city || '',
+            region: user.address?.city || '',
+            postal_code: user.address?.postCode || '',
+            country: user.address?.country || '',
+          },
+          id_number: {
+            value: user.documentId.value,
+            type: (user.documentId.type as IDNumberType) || null,
+          },
+        },
+      };
+      try {
+        const response: IdentityVerificationCreateResponse = await client
+          .identityVerificationCreate(request)
+          .then((res) => res.data);
+        return response;
+      } catch (error) {
+        throw new Error(error);
+      }
+    } catch (error) {
+      console.log('error', error);
+      throw new Error(error);
+    }
+  }
+
+  async getIdentityVerification(userId: number) {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          plaidClientId: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (user.plaidClientId === null) {
+        throw new Error('User data not available');
+      }
+
+      const request: IdentityVerificationGetRequest = {
+        // ID of the associated Identity verification attempt -> get this from create Idv request.
+        identity_verification_id: '',
+        secret: PLAID_SECRET,
+        client_id: user.plaidClientId,
+      };
+
+      try {
+        const response: IdentityVerificationGetResponse = await client
+          .identityVerificationGet(request)
+          .then((res) => res.data);
+        return response;
+      } catch (error) {
+        throw new Error(error);
+      }
+    } catch (error) {
+      console.log('error', error);
+      throw new Error(error);
+    }
+  }
+
+  async listIdentityVerification(userId: number) {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          plaidClientId: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (user.plaidClientId === null) {
+        throw new Error('User data not available');
+      }
+
+      const request: IdentityVerificationListRequest = {
+        template_id: PLAID_IDV_TEMPLATE_ID,
+        client_user_id: user.id.toString(),
+      };
+
+      try {
+        const response: IdentityVerificationListResponse = await client
+          .identityVerificationList(request)
+          .then((res) => res.data);
+        return response;
+      } catch (error) {
+        throw new Error(error);
+      }
+    } catch (error) {
+      console.log('error', error);
+      throw new Error(error);
+    }
+  }
+
+  async retryIdentityVerification(userId: number) {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          phoneNumber: true,
+          phoneNumberVerified: true,
+          email: true,
+          address: true,
+          plaidClientId: true,
+          idvUserConsent: true,
+          dateOfBirth: true,
+          givenName: true,
+          familyName: true,
+          documentId: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (
+        user.phoneNumber === null ||
+        user.givenName === null ||
+        user.familyName === null ||
+        user.documentId === null ||
+        user.dateOfBirth === null ||
+        user.plaidClientId === null
+      ) {
+        throw new Error('User data not available');
+      }
+
+      const request: IdentityVerificationRetryRequest = {
+        secret: PLAID_SECRET,
+        template_id: PLAID_IDV_TEMPLATE_ID,
+        strategy: Strategy.Reset,
+        client_id: user.plaidClientId,
+        client_user_id: user.id.toString(),
+      };
+
+      try {
+        const response: IdentityVerificationRetryResponse = await client
+          .identityVerificationRetry(request)
+          .then((res) => res.data);
+        return response;
+      } catch (error) {
+        throw new Error(error);
       }
     } catch (error) {
       console.log('error', error);
