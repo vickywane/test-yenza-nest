@@ -8,6 +8,14 @@ services:
       - "3000:3000"
     depends_on:
       - db
+    environment:
+      - PLAID_CLIENT_ID=${PLAID_CLIENT_ID}
+      - PLAID_SECRET=${PLAID_SECRET}
+      - PLAID_ENV=${PLAID_ENV}
+      - PLAID_PRODUCTS=${PLAID_PRODUCTS}
+      - PLAID_COUNTRY_CODES=${PLAID_COUNTRY_CODES}
+      - PLAID_REDIRECT_URI=${PLAID_REDIRECT_URI}
+      - DATABASE_URL=${DATABASE_URL}
   db:
     image: 'postgres:16'
     container_name: yyenza-pg
@@ -15,9 +23,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=yyenza
-      - POSTGRES_PASSWORD=yyenza
-      - POSTGRES_DB=yyenza-nest
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=yyenzanest
     ports:
       - '5432:5432'
 volumes:
