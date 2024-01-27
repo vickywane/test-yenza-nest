@@ -16,10 +16,12 @@ import {
   IdentityVerificationRetryRequest,
   Strategy,
   IdentityVerificationRetryResponse,
+  IdentityVerificationRetryRequestStepsObject,
 } from 'plaid';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import { LinkAccount, LinkSuccessMetadata } from './plaid.interface';
 import { format } from 'date-fns';
+import { CreatePlaidDto } from './dto/create-plaid.dto';
 
 const dotenv = require('dotenv');
 dotenv?.config();
@@ -56,6 +58,8 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class PlaidService {
+  constructor(private readonly userEntityDto: CreatePlaidDto) {}
+
   async getLinkToken() {
     return Promise.resolve().then(async function () {
       const configs: LinkTokenCreateRequest = {
@@ -342,19 +346,22 @@ export class PlaidService {
           phoneNumberVerified: true,
           email: true,
           address: true,
-          plaidClientId: true,
+          plaidUserId: true,
           idvUserConsent: true,
           dateOfBirth: true,
           givenName: true,
           familyName: true,
           documentId: true,
+          identityVerification: true,
         },
       });
 
+      // check if user exists
       if (!user) {
         throw new Error('User not found');
       }
 
+      // check if user has given consent and has all the required data
       if (
         user.idvUserConsent === false ||
         user.dateOfBirth === null ||
@@ -363,6 +370,11 @@ export class PlaidService {
         user.documentId === null
       ) {
         throw new Error('User data not available');
+      }
+
+      // check if user already has an identity verification
+      if (user.identityVerification && user.identityVerification.length > 0) {
+        throw new Error('User already has an identity verification');
       }
 
       const request: IdentityVerificationCreateRequest = {
@@ -394,10 +406,40 @@ export class PlaidService {
           },
         },
       };
+
+      const convertedUser: User = this.userEntityDto.userEntityToUserDto({
+        ...user,
+        createdAt: new Date().toISOString() || '',
+        updatedAt: new Date().toISOString() || '',
+        givenName: user.givenName || '',
+        familyName: user.familyName || '',
+        idvUserConsent: user.idvUserConsent || false,
+        phoneNumberVerified: user.phoneNumberVerified || false,
+        dateOfBirth: user.dateOfBirth || '',
+        plaidUserId: user.plaidUserId || '',
+        address: {
+          ...user.address,
+          id: Number(user.address?.id),
+          street: user.address?.street || '',
+          street2: user.address?.street2 || '',
+          city: user.address?.city || '',
+          postCode: user.address?.postCode || '',
+          country: user.address?.country || '',
+          state: user.address?.state || '',
+          createdAt: user.address?.createdAt || '',
+          updatedAt: user.address?.updatedAt || '',
+          userId: user.address?.userId?.toString() || '',
+        },
+      });
+
       try {
         const response: IdentityVerificationCreateResponse = await client
           .identityVerificationCreate(request)
           .then((res) => res.data);
+
+        // save response to db
+        await this.saveIdvResponseToDb(convertedUser, response);
+
         return response;
       } catch (error) {
         throw new Error(error);
@@ -416,7 +458,8 @@ export class PlaidService {
         },
         select: {
           id: true,
-          plaidClientId: true,
+          plaidUserId: true,
+          identityVerification: true,
         },
       });
 
@@ -424,7 +467,7 @@ export class PlaidService {
         throw new Error('User not found');
       }
 
-      if (user.plaidClientId === null) {
+      if (user.plaidUserId === null) {
         throw new Error('User data not available');
       }
 
@@ -432,7 +475,7 @@ export class PlaidService {
         // ID of the associated Identity verification attempt -> get this from create Idv request.
         identity_verification_id: '',
         secret: PLAID_SECRET,
-        client_id: user.plaidClientId,
+        client_id: user.plaidUserId,
       };
 
       try {
@@ -457,7 +500,7 @@ export class PlaidService {
         },
         select: {
           id: true,
-          plaidClientId: true,
+          plaidUserId: true,
         },
       });
 
@@ -465,7 +508,7 @@ export class PlaidService {
         throw new Error('User not found');
       }
 
-      if (user.plaidClientId === null) {
+      if (user.plaidUserId === null) {
         throw new Error('User data not available');
       }
 
@@ -488,7 +531,10 @@ export class PlaidService {
     }
   }
 
-  async retryIdentityVerification(userId: number) {
+  async retryIdentityVerification(
+    userId: number,
+    retrySteps?: IdentityVerificationRetryRequestStepsObject,
+  ) {
     try {
       const user = await prisma.user.findFirst({
         where: {
@@ -500,7 +546,7 @@ export class PlaidService {
           phoneNumberVerified: true,
           email: true,
           address: true,
-          plaidClientId: true,
+          plaidUserId: true,
           idvUserConsent: true,
           dateOfBirth: true,
           givenName: true,
@@ -519,27 +565,218 @@ export class PlaidService {
         user.familyName === null ||
         user.documentId === null ||
         user.dateOfBirth === null ||
-        user.plaidClientId === null
+        user.plaidUserId === null
       ) {
         throw new Error('User data not available');
       }
 
       const request: IdentityVerificationRetryRequest = {
-        secret: PLAID_SECRET,
         template_id: PLAID_IDV_TEMPLATE_ID,
+        client_user_id: user.id.toString() || '',
+        secret: PLAID_SECRET,
+        client_id: user.plaidUserId || '',
         strategy: Strategy.Reset,
-        client_id: user.plaidClientId,
-        client_user_id: user.id.toString(),
+        steps: retrySteps,
       };
 
-      try {
-        const response: IdentityVerificationRetryResponse = await client
-          .identityVerificationRetry(request)
-          .then((res) => res.data);
-        return response;
-      } catch (error) {
-        throw new Error(error);
-      }
+      // convert to User type
+      const convertedUser: User = this.userEntityDto.userEntityToUserDto({
+        ...user,
+        createdAt: new Date().toISOString() || '',
+        updatedAt: new Date().toISOString() || '',
+        givenName: user.givenName || '',
+        familyName: user.familyName || '',
+        idvUserConsent: user.idvUserConsent || false,
+        phoneNumberVerified: user.phoneNumberVerified || false,
+        dateOfBirth: user.dateOfBirth || '',
+        plaidUserId: user.plaidUserId || '',
+        address: {
+          ...user.address,
+          id: Number(user.address?.id),
+          street: user.address?.street || '',
+          street2: user.address?.street2 || '',
+          city: user.address?.city || '',
+          postCode: user.address?.postCode || '',
+          country: user.address?.country || '',
+          state: user.address?.state || '',
+          createdAt: user.address?.createdAt || '',
+          updatedAt: user.address?.updatedAt || '',
+          userId: user.address?.userId?.toString() || '',
+        },
+      });
+
+      // get retry response
+      const response: IdentityVerificationRetryResponse = await client
+        .identityVerificationRetry(request)
+        .then((res) => res.data);
+
+      // save response to db
+      await this.saveIdvResponseToDb(convertedUser, response);
+
+      return response;
+    } catch (error) {
+      console.log('error', error);
+      throw new Error(error);
+    }
+  }
+
+  async saveIdvResponseToDb(user: User, response: any) {
+    try {
+      const updatedIdv = await prisma.identityVerification.upsert({
+        where: {
+          plaidIdvId: response.id,
+          userId: user.id,
+        },
+        update: {
+          plaidIdvId: response.id,
+          plaidUserId: user.plaidUserId || '',
+          template: {
+            update: {
+              plaidTemplateId: response.template.id,
+              version: response.template.version,
+            },
+          },
+          verificationStatus: response.status,
+          user: {
+            update: {
+              phoneNumber: response.user.phone_number,
+              dateOfBirth: response.user.date_of_birth,
+              kycIPAddress: response.user.kyc_ip_address,
+              email: response.user.email_address,
+              givenName: response.user.name.given_name,
+              familyName: response.user.name.family_name,
+              address: {
+                update: {
+                  street: response.user.address.street,
+                  street2: response.user.address.street2,
+                  city: response.user.address.city,
+                  postCode: response.user.address.postal_code,
+                  country: response.user.address.country,
+                },
+              },
+            },
+          },
+          shareable_url: response.shareable_url,
+          idvDocumentaryVerificationStep: {
+            update: {
+              status: response.documentary_verification.status,
+              attempt: response.documentary_verification.document[0].attempt,
+              images: response.documentary_verification.document[0].images,
+              extractedData:
+                response.documentary_verification.document[0].extracted_data,
+              analysis: response.documentary_verification.document[0].analysis,
+              redacted_at:
+                response.documentary_verification.document[0].redacted_at,
+            },
+          },
+          idvSelfieCheckStep: {
+            update: {
+              status: response.selfie_check.status,
+              capture: response.selfie_check[0].capture,
+              analysis: response.selfie_check[0].analysis,
+            },
+          },
+          idvKycCheckStep: {
+            update: {
+              status: response.kyc_check.status,
+              address: response.kyc_check.address,
+              name: response.kyc_check.name.summary,
+              id_number: response.kyc_check.id_number.summary,
+              phone_number: response.kyc_check.phone_number,
+              date_of_birth: response.kyc_check.date_of_birth.summary,
+            },
+          },
+          idvRiskCheckStep: {
+            update: {
+              status: response.risk_check.status,
+              behaviour: response.risk_check.behaviour,
+              email: response.risk_check.email,
+              devices: response.risk_check.devices,
+              linked_services: response.risk_check.phone.linked_services,
+            },
+          },
+          watchlist_screening_id: response.watchlist_screening_id,
+          redacted_at: response.redacted_at,
+          request_id: response.request_id,
+          updatedAt: new Date().toISOString(),
+        },
+        create: {
+          plaidIdvId: response.id,
+          plaidUserId: user.plaidUserId || '',
+          template: {
+            create: {
+              plaidTemplateId: response.template.id,
+              version: response.template.version,
+            },
+          },
+          verificationStatus: response.status,
+          user: {
+            create: {
+              phoneNumber: response.user.phone_number,
+              dateOfBirth: response.user.date_of_birth,
+              kycIPAddress: response.user.kyc_ip_address,
+              email: response.user.email_address,
+              givenName: response.user.name.given_name,
+              familyName: response.user.name.family_name,
+              address: {
+                create: {
+                  street: response.user.address.street,
+                  street2: response.user.address.street2,
+                  city: response.user.address.city,
+                  postCode: response.user.address.postal_code,
+                  country: response.user.address.country,
+                },
+              },
+            },
+          },
+          shareable_url: response.shareable_url,
+          idvDocumentaryVerificationStep: {
+            create: {
+              status: response.documentary_verification.status,
+              attempt: response.documentary_verification.document[0].attempt,
+              images: response.documentary_verification.document[0].images,
+              extractedData:
+                response.documentary_verification.document[0].extracted_data,
+              analysis: response.documentary_verification.document[0].analysis,
+              redacted_at:
+                response.documentary_verification.document[0].redacted_at,
+            },
+          },
+          idvSelfieCheckStep: {
+            create: {
+              status: response.selfie_check.status,
+              capture: response.selfie_check[0].capture,
+              analysis: response.selfie_check[0].analysis,
+            },
+          },
+          idvKycCheckStep: {
+            create: {
+              status: response.kyc_check.status,
+              address: response.kyc_check.address,
+              name: response.kyc_check.name.summary,
+              id_number: response.kyc_check.id_number.summary,
+              phone_number: response.kyc_check.phone_number,
+              date_of_birth: response.kyc_check.date_of_birth.summary,
+            },
+          },
+          idvRiskCheckStep: {
+            create: {
+              status: response.risk_check.status,
+              behaviour: response.risk_check.behaviour,
+              email: response.risk_check.email,
+              devices: response.risk_check.devices,
+              linked_services: response.risk_check.phone.linked_services,
+            },
+          },
+          watchlist_screening_id: response.watchlist_screening_id,
+          redacted_at: response.redacted_at,
+          request_id: response.request_id,
+          updatedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      return updatedIdv;
     } catch (error) {
       console.log('error', error);
       throw new Error(error);

@@ -7,19 +7,21 @@ export interface UserEntity {
   familyName: string;
   email?: string;
   idvUserConsent?: boolean;
-  idvUserConsentDate?: string | Date;
+  idvUserConsentDate?: string;
   idvUserId?: string;
   phoneNumber: string;
   phoneNumberVerified?: boolean;
-  emailVerified?: string;
+  emailVerified?: boolean;
   kycStatus?: KYCStatus;
-  dateOfBirth?: string | Date;
+  dateOfBirth?: string;
   addressId?: string;
   address?: Address;
   linkedAccounts?: LinkedAccountEntity[];
   linkedInstitutions?: LinkInstitutionEntity[];
   plaidPublicToken?: string;
   plaidAccessToken?: string;
+  kycIPAddress?: string;
+  plaidUserId?: string;
   createdAt: string | Date;
   updatedAt: string | Date;
 }

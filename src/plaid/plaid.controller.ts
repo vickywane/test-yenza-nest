@@ -2,6 +2,7 @@ import { Body, Controller, Get, Next, Param, Post, Res } from '@nestjs/common';
 import { NextFunction, Response } from 'express';
 import { PlaidService } from './plaid.service';
 import { LinkSuccess } from './plaid.interface';
+import { IdentityVerificationRetryRequestStepsObject } from 'plaid';
 
 @Controller('plaid')
 export class PlaidController {
@@ -117,12 +118,14 @@ export class PlaidController {
   @Post('identity-verification/retry/:userId')
   async retryIdentityVerification(
     @Param('userId') userId: string,
+    @Body() body: { retrySteps?: IdentityVerificationRetryRequestStepsObject },
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
       const response = await this.plaidService.retryIdentityVerification(
         Number(userId),
+        body.retrySteps,
       );
       res.json(response);
     } catch (error) {
