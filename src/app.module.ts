@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PlaidModule } from './plaid/plaid.module';
 import { PrismaService } from './prisma.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [PlaidModule],
+  imports: [PlaidModule, ConfigModule.forRoot()],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

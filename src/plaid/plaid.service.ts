@@ -24,9 +24,6 @@ import { format } from 'date-fns';
 import { CreatePlaidDto } from './dto/create-plaid.dto';
 import { PrismaService } from 'src/prisma.service';
 
-const dotenv = require('dotenv');
-dotenv?.config();
-
 const PLAID_PRODUCTS = (
   process.env.PLAID_PRODUCTS || Products.Transactions
 ).split(',');

@@ -11,8 +11,6 @@ import {
 } from '@nestjs/common';
 import { NextFunction, Response } from 'express';
 import { PlaidService } from './plaid.service';
-import { LinkSuccess } from './plaid.interface';
-import { IdentityVerificationRetryRequestStepsObject } from 'plaid';
 import { LinkAccountDto } from './dto/linkAccount.dto';
 import { IdentityVerificationRetryDto } from './dto/identityVerification.dto';
 
