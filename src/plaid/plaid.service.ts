@@ -18,10 +18,11 @@ import {
   IdentityVerificationRetryResponse,
   IdentityVerificationRetryRequestStepsObject,
 } from 'plaid';
-import { PrismaClient, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { LinkAccount, LinkSuccessMetadata } from './plaid.interface';
 import { format } from 'date-fns';
 import { CreatePlaidDto } from './dto/create-plaid.dto';
+import { PrismaService } from 'src/prisma.service';
 
 const dotenv = require('dotenv');
 dotenv?.config();
@@ -54,13 +55,12 @@ const configuration = new Configuration({
 });
 
 const client = new PlaidApi(configuration);
-const prisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL,
-});
 const plaidDto = new CreatePlaidDto();
 
 @Injectable()
 export class PlaidService {
+  constructor(private prisma: PrismaService) {}
+
   async getLinkToken() {
     return Promise.resolve().then(async function () {
       const configs: LinkTokenCreateRequest = {
@@ -88,7 +88,7 @@ export class PlaidService {
 
   async getAccessToken(userId: number, publicToken?: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -102,7 +102,7 @@ export class PlaidService {
       const accessToken = tokenResponse.data.access_token;
 
       if (accessToken) {
-        await prisma.user.update({
+        await this.prisma.user.update({
           where: {
             id: userId,
           },
@@ -135,7 +135,7 @@ export class PlaidService {
     const { institution, accounts } = linkAccounts;
     try {
       // get user from database
-      const user = await prisma.user.findFirstOrThrow({
+      const user = await this.prisma.user.findFirstOrThrow({
         where: {
           phoneNumber: phoneNumber,
         },
@@ -147,7 +147,7 @@ export class PlaidService {
 
       if (institution) {
         // update institution
-        await prisma.linkInstitution.upsert({
+        await this.prisma.linkInstitution.upsert({
           where: {
             plaidInstitutionId: institution.id,
           },
@@ -174,7 +174,7 @@ export class PlaidService {
 
         if (newAccounts.length > 0) {
           // create new accounts
-          await prisma.linkedAccount.createMany({
+          await this.prisma.linkedAccount.createMany({
             data: newAccounts.map((account) => ({
               plaidAccountId: account.id,
               name: account.name,
@@ -190,7 +190,7 @@ export class PlaidService {
         if (publicToken) {
           // update public token of the user
           console.log('publicToken', publicToken);
-          await prisma.user.update({
+          await this.prisma.user.update({
             where: {
               id: user.id,
             },
@@ -217,7 +217,7 @@ export class PlaidService {
 
   async identityGetAndUpdate(userId: number) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -241,7 +241,7 @@ export class PlaidService {
 
       if (response.data.accounts.length > 0) {
         response.data.accounts.forEach(async (account) => {
-          await prisma.linkedAccount.update({
+          await this.prisma.linkedAccount.update({
             where: {
               plaidAccountId: account.account_id,
               userId: user.id,
@@ -278,7 +278,7 @@ export class PlaidService {
 
   async getLinkedBankAccounts(userId: number) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -297,14 +297,14 @@ export class PlaidService {
         const plaidAccountIds = user.linkedAccounts.map(
           (account) => account.plaidAccountId,
         );
-        const linkedInstitutions = await prisma.linkInstitution.findMany({
+        const linkedInstitutions = await this.prisma.linkInstitution.findMany({
           where: {
             plaidInstitutionId: {
               in: linkedInstitutionsIds,
             },
           },
         });
-        const balances = await prisma.balances.findMany({
+        const balances = await this.prisma.balances.findMany({
           where: {
             plaidAccountId: {
               in: plaidAccountIds,
@@ -337,7 +337,7 @@ export class PlaidService {
 
   async createIdentityVerification(userId: number) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -453,7 +453,7 @@ export class PlaidService {
 
   async getIdentityVerification(userId: number) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -495,7 +495,7 @@ export class PlaidService {
 
   async listIdentityVerification(userId: number) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -537,7 +537,7 @@ export class PlaidService {
     retrySteps?: IdentityVerificationRetryRequestStepsObject,
   ) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -623,7 +623,7 @@ export class PlaidService {
 
   async saveIdvResponseToDb(user: User, response: any) {
     try {
-      const updatedIdv = await prisma.identityVerification.upsert({
+      const updatedIdv = await this.prisma.identityVerification.upsert({
         where: {
           plaidIdvId: response.id,
           userId: user.id,

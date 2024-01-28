@@ -1,16 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { SignUpUser } from './plaid/plaid.interface';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL,
-});
+import { PrismaService } from './prisma.service';
 
 @Injectable()
 export class AppService {
+  constructor(private prisma: PrismaService) {}
   async createNewUser(user: SignUpUser) {
     try {
-      const userExist = !!(await prisma.user.findFirst({
+      const userExist = !!(await this.prisma.user.findFirst({
         where: {
           OR: [
             {
@@ -26,7 +23,7 @@ export class AppService {
         throw new Error('User already exist');
       }
 
-      const newUser = await prisma.user.create({
+      const newUser = await this.prisma.user.create({
         data: {
           // givenName: user.givenName || '',
           // familyName: user.familyName || '',
