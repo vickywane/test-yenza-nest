@@ -1,6 +1,15 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
   id                   Int                   @id @default(autoincrement())
   authId               String?               @unique @db.VarChar(255)
@@ -188,15 +197,6 @@ model Address {
   updatedAt DateTime @updatedAt
   userId    Int      @unique
   user      User     @relation(fields: [userId], references: [id])
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model IdentityVerification {

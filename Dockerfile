@@ -13,10 +13,10 @@ RUN npm install
 # Bundle app source
 COPY . .
 
+RUN npx prisma generate
+
 # Creates a "dist" folder with the production build
 RUN npm run build
-
-RUN npx prisma generate
 
 # Expose the port on which the app will run
 EXPOSE 3000

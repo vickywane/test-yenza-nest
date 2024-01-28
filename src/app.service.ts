@@ -2,13 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { SignUpUser } from './plaid/plaid.interface';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL,
+});
+
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
-  }
-
   async createNewUser(user: SignUpUser) {
     try {
       const userExist = !!(await prisma.user.findFirst({

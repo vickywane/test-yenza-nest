@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Next,
   Post,
   Res,
@@ -14,6 +15,11 @@ import { SignUpUserDto } from './dto/signupuser.dto';
 @Controller('/')
 export class AppController {
   constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getHello(): string {
+    return 'Hello World!';
+  }
 
   @Post('sign-up')
   @UsePipes(ValidationPipe)

@@ -54,7 +54,9 @@ const configuration = new Configuration({
 });
 
 const client = new PlaidApi(configuration);
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL,
+});
 const plaidDto = new CreatePlaidDto();
 
 @Injectable()
