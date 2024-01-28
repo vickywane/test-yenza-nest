@@ -3,6 +3,7 @@ export interface UserEntity {
   id?: number;
   authId?: string;
   authMethod?: AuthMethod;
+  countryCode: string;
   givenName: string;
   familyName: string;
   email?: string;
@@ -29,6 +30,7 @@ export interface UserEntity {
 export interface LinkedAccountEntity {
   id?: number;
   plaidAccountId: string;
+  countryCode: string;
   userId: string;
   name: string;
   officialName: string;

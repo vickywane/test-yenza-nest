@@ -406,6 +406,7 @@ export class PlaidService {
 
       const convertedUser: User = plaidDto.userEntityToUserDto({
         ...user,
+        countryCode: '',
         createdAt: new Date().toISOString() || '',
         updatedAt: new Date().toISOString() || '',
         givenName: user.givenName || '',
@@ -591,6 +592,7 @@ export class PlaidService {
       // convert to User type
       const convertedUser: User = plaidDto.userEntityToUserDto({
         ...user,
+        countryCode: '',
         createdAt: new Date().toISOString() || '',
         updatedAt: new Date().toISOString() || '',
         givenName: user.givenName || '',
