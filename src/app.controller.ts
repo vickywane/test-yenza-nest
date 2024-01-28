@@ -1,15 +1,24 @@
-import { Body, Controller, Next, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Next,
+  Post,
+  Res,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { AppService } from './app.service';
-import { SignUpUser } from './plaid/plaid.interface';
 import { NextFunction, Response } from 'express';
+import { SignUpUserDto } from './dto/signupuser.dto';
 
 @Controller('/')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Post('sign-up')
+  @UsePipes(ValidationPipe)
   async signUp(
-    @Body() body: SignUpUser,
+    @Body() body: SignUpUserDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {

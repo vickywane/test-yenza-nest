@@ -55,11 +55,10 @@ const configuration = new Configuration({
 
 const client = new PlaidApi(configuration);
 const prisma = new PrismaClient();
+const plaidDto = new CreatePlaidDto();
 
 @Injectable()
 export class PlaidService {
-  constructor(private readonly userEntityDto: CreatePlaidDto) {}
-
   async getLinkToken() {
     return Promise.resolve().then(async function () {
       const configs: LinkTokenCreateRequest = {
@@ -407,7 +406,7 @@ export class PlaidService {
         },
       };
 
-      const convertedUser: User = this.userEntityDto.userEntityToUserDto({
+      const convertedUser: User = plaidDto.userEntityToUserDto({
         ...user,
         createdAt: new Date().toISOString() || '',
         updatedAt: new Date().toISOString() || '',
@@ -580,7 +579,7 @@ export class PlaidService {
       };
 
       // convert to User type
-      const convertedUser: User = this.userEntityDto.userEntityToUserDto({
+      const convertedUser: User = plaidDto.userEntityToUserDto({
         ...user,
         createdAt: new Date().toISOString() || '',
         updatedAt: new Date().toISOString() || '',

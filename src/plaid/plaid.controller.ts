@@ -1,8 +1,20 @@
-import { Body, Controller, Get, Next, Param, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Next,
+  Param,
+  Post,
+  Res,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { NextFunction, Response } from 'express';
 import { PlaidService } from './plaid.service';
 import { LinkSuccess } from './plaid.interface';
 import { IdentityVerificationRetryRequestStepsObject } from 'plaid';
+import { LinkAccountDto } from './dto/linkAccount.dto';
+import { IdentityVerificationRetryDto } from './dto/identityVerification.dto';
 
 @Controller('plaid')
 export class PlaidController {
@@ -23,10 +35,11 @@ export class PlaidController {
   }
 
   @Post('link-accounts')
+  @UsePipes(ValidationPipe)
   // Exchange token flow - exchange a Link public_token for access token
   // See https://plaid.com/docs/#exchange-token-flow
   async updateLinkAccounts(
-    @Body() body: LinkSuccess & { phoneNumber: string },
+    @Body() body: LinkAccountDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -116,9 +129,10 @@ export class PlaidController {
   }
 
   @Post('identity-verification/retry/:userId')
+  @UsePipes(ValidationPipe)
   async retryIdentityVerification(
     @Param('userId') userId: string,
-    @Body() body: { retrySteps?: IdentityVerificationRetryRequestStepsObject },
+    @Body() body: IdentityVerificationRetryDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
