@@ -437,9 +437,12 @@ export class PlaidService {
           });
         console.log('Idvresponse', response);
         // save response to db
-        await this.saveIdvResponseToDb(convertedUser, response);
+        const storedData = await this.saveIdvResponseToDb(
+          convertedUser,
+          response,
+        );
 
-        return response;
+        return storedData;
       } catch (error) {
         throw new Error(error);
       }
@@ -470,9 +473,11 @@ export class PlaidService {
         throw new Error('User data not available');
       }
 
+      console.log('user', user);
+
       const request: IdentityVerificationGetRequest = {
         // ID of the associated Identity verification attempt -> get this from create Idv request.
-        identity_verification_id: '',
+        identity_verification_id: user.identityVerification[0].plaidIdvId,
         secret: PLAID_SECRET,
         client_id: user.plaidUserId,
       };
@@ -642,9 +647,17 @@ export class PlaidService {
           },
         },
         select: {
+          id: true,
+          familyName: true,
+          givenName: true,
+          email: true,
+          phoneNumber: true,
+          dateOfBirth: true,
           identityVerification: true,
           kycStatus: true,
           plaidUserId: true,
+          address: true,
+          documentId: true,
         },
       });
 
@@ -656,60 +669,57 @@ export class PlaidService {
 
       if (
         updatedUser.identityVerification &&
-        updatedUser.identityVerification.length > 0
+        updatedUser.identityVerification.length > 0 &&
+        updatedUser.identityVerification.find(
+          (idv) => idv.plaidIdvId === response.id,
+        )
       ) {
-        if (
-          updatedUser.identityVerification.find(
-            (idv) => idv.plaidIdvId === response.id,
-          )
-        ) {
-          updatedIdv = await this.prisma.identityVerification.update({
-            where: {
-              plaidIdvId: response.id,
-              userId: user.id,
-            },
-            data: {
-              plaidIdvId: response.id,
-              plaidUserId: user.plaidUserId || '',
-              template: {
-                update: {
-                  plaidTemplateId: response.template.id,
-                  version: response.template.version,
-                },
-              },
-              verificationStatus: response.status,
-              shareable_url: response.shareable_url,
-              watchlist_screening_id: response.watchlist_screening_id,
-              redacted_at: response.redacted_at,
-              request_id: response.request_id,
-              updatedAt: new Date().toISOString(),
-            },
-          });
-        } else {
-          updatedIdv = await this.prisma.identityVerification.create({
-            data: {
-              plaidIdvId: response.id,
-              plaidUserId: user.plaidUserId || '',
-              template: {
-                create: {
-                  plaidTemplateId: response.template.id,
-                  version: response.template.version,
-                },
-              },
-              verificationStatus: response.status,
-              shareable_url: response.shareable_url,
-              watchlist_screening_id: response.watchlist_screening_id,
-              redacted_at: response.redacted_at,
-              request_id: response.request_id,
-              updatedAt: new Date().toISOString(),
-              user: {
-                connect: {
-                  id: user.id,
-                },
+        updatedIdv = await this.prisma.identityVerification.update({
+          where: {
+            plaidIdvId: response.id,
+            userId: user.id,
+          },
+          data: {
+            plaidIdvId: response.id,
+            plaidUserId: user.plaidUserId || '',
+            template: {
+              update: {
+                plaidTemplateId: response.template.id,
+                version: response.template.version,
               },
             },
-          });
-        }
+            verificationStatus: response.status,
+            shareable_url: response.shareable_url,
+            watchlist_screening_id: response.watchlist_screening_id,
+            redacted_at: response.redacted_at,
+            request_id: response.request_id,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } else {
+        updatedIdv = await this.prisma.identityVerification.create({
+          data: {
+            plaidIdvId: response.id,
+            plaidUserId: user.plaidUserId || '',
+            template: {
+              create: {
+                plaidTemplateId: response.template.id,
+                version: response.template.version,
+              },
+            },
+            verificationStatus: response.status,
+            shareable_url: response.shareable_url,
+            watchlist_screening_id: response.watchlist_screening_id,
+            redacted_at: response.redacted_at,
+            request_id: response.request_id,
+            updatedAt: new Date().toISOString(),
+            user: {
+              connect: {
+                id: user.id,
+              },
+            },
+          },
+        });
       }
 
       return { updatedUser, updatedIdv };
