@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { SignUpUser } from './plaid/plaid.interface';
 import { PrismaService } from './prisma.service';
+import { PlaidService } from './plaid/plaid.service';
 
 @Injectable()
 export class AppService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private plaidService: PlaidService,
+  ) {}
+
   async createNewUser(user: SignUpUser) {
     try {
       const userExist = !!(await this.prisma.user.findFirst({
@@ -29,7 +34,7 @@ export class AppService {
           // familyName: user.familyName || '',
           email: user.email,
           phoneNumber: user.phoneNumber,
-          // dateOfBirth: user.dateOfBirth || '',
+          idvUserConsent: true,
         },
       });
 
@@ -57,6 +62,8 @@ export class AppService {
       //     },
       //   });
       // }
+
+      // await this.plaidService.createIdentityVerification(newUser.id);
 
       return newUser;
     } catch (error) {
