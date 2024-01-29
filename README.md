@@ -10,7 +10,7 @@ This is the main NestJS application for yyenza.
 
 ## Prerequisites
 
-### Start NestJS app
+### Start NestJS app (with Postgres DB run on docker)
 This app can be either run on a docker compose environment or local environment for convenience. Postgres DB will be run on a docker environment. Before you get started, you'll need to install a few tools:
 
 1. **Run NestJS app Locally**:
