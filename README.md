@@ -22,6 +22,9 @@ npm install
 // generate types using prisma cli and initialise database
 npx prisma generate && npx prisma migrate dev
 
+// seed data to db
+npx prisma db seed
+
 // start the app
 npm run start:dev
 
