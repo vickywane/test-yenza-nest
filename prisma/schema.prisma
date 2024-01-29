@@ -8,32 +8,32 @@ datasource db {
 }
 
 model User {
-  id                   Int                   @id @default(autoincrement())
-  authId               String?               @unique @db.VarChar(255)
-  authMethod           AuthMethod            @default(AWS_COGNITO)
-  givenName            String?               @db.VarChar(255)
-  familyName           String?               @db.VarChar(255)
-  email                String                @unique @db.VarChar(255)
-  idvUserConsent       Boolean?              @default(false)
+  id                   Int                    @id @default(autoincrement())
+  authId               String?                @unique @db.VarChar(255)
+  authMethod           AuthMethod             @default(AWS_COGNITO)
+  givenName            String?                @db.VarChar(255)
+  familyName           String?                @db.VarChar(255)
+  email                String                 @unique @db.VarChar(255)
+  idvUserConsent       Boolean?               @default(false)
   idvUserConsentDate   String?
-  idvUserId            String?               @unique @db.VarChar(255)
-  phoneNumber          String                @unique @db.VarChar(255)
-  phoneNumberVerified  Boolean?              @default(false)
-  emailVerified        Boolean?              @default(false)
-  kycStatus            KYCStatus?            @default(unverified)
+  idvUserId            String?                @unique @db.VarChar(255)
+  phoneNumber          String                 @unique @db.VarChar(255)
+  phoneNumberVerified  Boolean?               @default(false)
+  emailVerified        Boolean?               @default(false)
+  kycStatus            KYCStatus?             @default(unverified)
   kycIPAddress         String?
   dateOfBirth          String?
   addressId            String?
-  plaidPublicToken     String?               @db.VarChar(255)
-  plaidAccessToken     String?               @db.VarChar(255)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  plaidUserId          String?               @unique @db.VarChar(255)
+  plaidPublicToken     String?                @db.VarChar(255)
+  plaidAccessToken     String?                @db.VarChar(255)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  plaidUserId          String?                @unique @db.VarChar(255)
   address              Address?
   documentId           DocumentId?
   identityVerification IdentityVerification[]
   linkedAccounts       LinkedAccount[]
-  linkedInstitutions   LinkInstitution[]     @relation("LinkInstitutionToUser")
+  linkedInstitutions   LinkInstitution[]      @relation("LinkInstitutionToUser")
 }
 
 model DocumentId {
@@ -106,9 +106,9 @@ model IdentityVerification {
   id                             Int                             @id @default(autoincrement())
   plaidIdvId                     String                          @unique @db.VarChar(255)
   plaidUserId                    String
-  userId                         Int                             
+  userId                         Int
   shareable_url                  String?                         @db.VarChar(255)
-  verificationStatus             String?                          @db.VarChar(255)
+  verificationStatus             String?                         @db.VarChar(255)
   templateId                     Int
   watchlist_screening_id         String?
   redacted_at                    String?
@@ -125,7 +125,7 @@ model IdentityVerification {
 
 model IdvTemplate {
   id                    Int                    @id @default(autoincrement())
-  plaidTemplateId       String                 
+  plaidTemplateId       String
   version               Int
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -135,33 +135,33 @@ model IdvTemplate {
 model IdvDocumentaryVerificationStep {
   id                     Int                       @id @default(autoincrement())
   stepName               IdvStepName               @default(documentary_verification)
-  status                 String?                    @db.VarChar(255)
-  attempt                Int?                       @default(autoincrement())
-  identityVerificationId Int?                       @unique
+  status                 String?                   @db.VarChar(255)
+  attempt                Int?                      @default(autoincrement())
+  identityVerificationId Int?                      @unique
   redacted_at            String?
   createdAt              DateTime                  @default(now())
   updatedAt              DateTime                  @updatedAt
   analysis               IdvDocumentAnalysis?
   extractedData          IdvDocumentExtractedData?
   images                 IdvDocumentImages?
-  identityVerification   IdentityVerification?      @relation(fields: [identityVerificationId], references: [id])
+  identityVerification   IdentityVerification?     @relation(fields: [identityVerificationId], references: [id])
 }
 
 model IdvDocumentImages {
-  id                               Int                            @id @default(autoincrement())
+  id                               Int                             @id @default(autoincrement())
   original_front                   String?                         @db.VarChar(255)
   original_back                    String?                         @db.VarChar(255)
   cropped_front                    String?                         @db.VarChar(255)
   cropped_back                     String?                         @db.VarChar(255)
   face                             String?                         @db.VarChar(255)
   IdvDocumentaryVerificationStepId Int?                            @unique
-  createdAt                        DateTime                       @default(now())
-  updatedAt                        DateTime                       @updatedAt
+  createdAt                        DateTime                        @default(now())
+  updatedAt                        DateTime                        @updatedAt
   idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep? @relation(fields: [IdvDocumentaryVerificationStepId], references: [id])
 }
 
 model IdvDocumentExtractedData {
-  id                               Int                            @id @default(autoincrement())
+  id                               Int                             @id @default(autoincrement())
   id_number                        String?                         @db.VarChar(255)
   category                         String?                         @db.VarChar(255)
   expiration_date                  String?                         @db.VarChar(255)
@@ -169,97 +169,97 @@ model IdvDocumentExtractedData {
   issuing_region                   String?                         @db.VarChar(255)
   date_of_birth                    String?                         @db.VarChar(255)
   idvDocumentaryVerificationStepId Int?                            @unique
-  createdAt                        DateTime                       @default(now())
-  updatedAt                        DateTime                       @updatedAt
+  createdAt                        DateTime                        @default(now())
+  updatedAt                        DateTime                        @updatedAt
   address                          IdvDocumentExtractedAddress?
   idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep? @relation(fields: [idvDocumentaryVerificationStepId], references: [id])
 }
 
 model IdvDocumentExtractedAddress {
-  id                         Int                      @id @default(autoincrement())
+  id                         Int                       @id @default(autoincrement())
   street                     String?                   @db.VarChar(255)
   city                       String?                   @db.VarChar(255)
   state                      String?                   @db.VarChar(255)
   postal_code                String?                   @db.VarChar(255)
   country                    String?                   @db.VarChar(255)
   idvDocumentExtractedDataId Int?                      @unique
-  createdAt                  DateTime                 @default(now())
-  updatedAt                  DateTime                 @updatedAt
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
   idvDocumentExtractedData   IdvDocumentExtractedData? @relation(fields: [idvDocumentExtractedDataId], references: [id])
 }
 
 model IdvDocumentAnalysis {
   id                               Int                               @id @default(autoincrement())
-  idvDocumentaryVerificationStepId Int?                               @unique
-  createdAt                        String?                          
+  idvDocumentaryVerificationStepId Int?                              @unique
+  createdAt                        String?
   authenticity                     Authenticity?
   image_quality                    ImageQuality?
   redacted_at                      String?
-  idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep?    @relation(fields: [idvDocumentaryVerificationStepId], references: [id])
+  idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep?   @relation(fields: [idvDocumentaryVerificationStepId], references: [id])
   extracted_data                   IdvDocumentExtractedAnalysisData?
 }
 
 model IdvDocumentExtractedAnalysisData {
-  id                               Int                 @id @default(autoincrement())
+  id                               Int                  @id @default(autoincrement())
   idvDocumentAnalysisId            Int?                 @unique
   name                             Authenticity?
   date_of_birth                    Authenticity?
   expiration_date                  Expiration?
   issing_country                   Authenticity?
-  createdAt                        DateTime            @default(now())
-  updatedAt                        DateTime            @updatedAt
+  createdAt                        DateTime             @default(now())
+  updatedAt                        DateTime             @updatedAt
   idvDocumentExtractedAnalysisData IdvDocumentAnalysis? @relation(fields: [idvDocumentAnalysisId], references: [id])
 }
 
 model IdvSelfieCheckStep {
-  id                     Int                  @id @default(autoincrement())
-  stepName               IdvStepName          @default(selfie_check)
+  id                     Int                   @id @default(autoincrement())
+  stepName               IdvStepName           @default(selfie_check)
   status                 String?               @db.VarChar(255)
   attempt                Int?                  @default(autoincrement())
   identityVerificationId Int?                  @unique
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
   analysis               IdvSelfieAnalysis?
   capture                IdvSelfieCapture?
   identityVerification   IdentityVerification? @relation(fields: [identityVerificationId], references: [id])
 }
 
 model IdvSelfieCapture {
-  id                   Int                @id @default(autoincrement())
+  id                   Int                 @id @default(autoincrement())
   image_url            String?             @db.VarChar(255)
   video_url            String?             @db.VarChar(255)
   idvSelfieCheckStepId Int?                @unique
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
   idvSelfieCheckStep   IdvSelfieCheckStep? @relation(fields: [idvSelfieCheckStepId], references: [id])
 }
 
 model IdvSelfieAnalysis {
-  id                   Int                @id @default(autoincrement())
+  id                   Int                 @id @default(autoincrement())
   document_comparison  Authenticity?
   idvSelfieCheckStepId Int?                @unique
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
   idvSelfieCheckStep   IdvSelfieCheckStep? @relation(fields: [idvSelfieCheckStepId], references: [id])
 }
 
 model IdvKycCheckStep {
-  id                     Int                  @id @default(autoincrement())
-  stepName               IdvStepName          @default(kyc_check)
+  id                     Int                   @id @default(autoincrement())
+  stepName               IdvStepName           @default(kyc_check)
   status                 String?               @db.VarChar(255)
   name                   Authenticity?
   id_number              Authenticity?
   date_of_birth          Authenticity?
   identityVerificationId Int?                  @unique
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
   address                IdvKycAddress?
   identityVerification   IdentityVerification? @relation(fields: [identityVerificationId], references: [id])
   phone_number           IdvKycPhoneNumber?
 }
 
 model IdvKycAddress {
-  id                Int               @id @default(autoincrement())
+  id                Int                @id @default(autoincrement())
   IdvKycCheckStepId Int?               @unique
   summary           Authenticity?
   po_box            Binary?
@@ -268,7 +268,7 @@ model IdvKycAddress {
 }
 
 model IdvKycPhoneNumber {
-  id                Int             @id @default(autoincrement())
+  id                Int              @id @default(autoincrement())
   IdvKycCheckStepId Int?             @unique
   summary           Authenticity?
   area_code         Authenticity?
@@ -278,31 +278,31 @@ model IdvKycPhoneNumber {
 model IdvRiskCheckStep {
   id                     Int                   @id @default(autoincrement())
   stepName               IdvStepName           @default(risk_check)
-  status                 String?                @db.VarChar(255)
+  status                 String?               @db.VarChar(255)
   linked_services        String[]
-  identityVerificationId Int?                   @unique
+  identityVerificationId Int?                  @unique
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
   identity_abuse_signals IdentityAbuseSignals?
   behaviour              IdvRiskBehaviour?
-  identityVerification   IdentityVerification?  @relation(fields: [identityVerificationId], references: [id])
+  identityVerification   IdentityVerification? @relation(fields: [identityVerificationId], references: [id])
   devices                IdvRiskDevice?
   email                  IdvRiskEmail?
 }
 
 model IdvRiskBehaviour {
-  id                  Int              @id @default(autoincrement())
+  id                  Int               @id @default(autoincrement())
   IdvRiskStepCheckId  Int?              @unique
   user_interaction    UserInteraction?
   fraud_ring_detected Binary?
   bot_detected        Binary?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   IdvRiskStepCheck    IdvRiskCheckStep? @relation(fields: [IdvRiskStepCheckId], references: [id])
 }
 
 model IdvRiskEmail {
-  id                             Int              @id @default(autoincrement())
+  id                             Int               @id @default(autoincrement())
   IdvRiskCheckStepId             Int?              @unique
   is_deliverable                 Binary?
   breach_count                   Int?
@@ -314,29 +314,29 @@ model IdvRiskEmail {
   domain_is_disposable           Binary?
   top_level_domain_is_suspicious Binary?
   linked_services                String[]
-  createdAt                      DateTime         @default(now())
-  updatedAt                      DateTime         @updatedAt
+  createdAt                      DateTime          @default(now())
+  updatedAt                      DateTime          @updatedAt
   IdvRiskCheckStep               IdvRiskCheckStep? @relation(fields: [IdvRiskCheckStepId], references: [id])
 }
 
 model IdvRiskDevice {
-  id                 Int              @id @default(autoincrement())
+  id                 Int               @id @default(autoincrement())
   idvRiskCheckStepId Int?              @unique
   ip_proxy_type      String?
   ip_spam_list_count Int?
   ip_timezone_offset String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
   idvRiskCheckStep   IdvRiskCheckStep? @relation(fields: [idvRiskCheckStepId], references: [id])
 }
 
 model IdentityAbuseSignals {
-  id                       Int              @id @default(autoincrement())
+  id                       Int               @id @default(autoincrement())
   idvRiskCheckStepId       Int?              @unique
   syntentic_identity_score Int?
   stolen_identity_score    Int?
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
   idvRiskCheckStep         IdvRiskCheckStep? @relation(fields: [idvRiskCheckStepId], references: [id])
 }
 
