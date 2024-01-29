@@ -469,8 +469,11 @@ export class PlaidService {
         throw new Error('User not found');
       }
 
-      if (user.plaidUserId === null) {
-        throw new Error('User data not available');
+      if (
+        !user.identityVerification ||
+        user.identityVerification.length === 0
+      ) {
+        throw new Error('User identity has not been verified');
       }
 
       console.log('user', user);
@@ -479,7 +482,7 @@ export class PlaidService {
         // ID of the associated Identity verification attempt -> get this from create Idv request.
         identity_verification_id: user.identityVerification[0].plaidIdvId,
         secret: PLAID_SECRET,
-        client_id: user.plaidUserId,
+        client_id: user.plaidUserId || '',
       };
 
       try {
@@ -505,6 +508,7 @@ export class PlaidService {
         select: {
           id: true,
           plaidUserId: true,
+          identityVerification: true,
         },
       });
 
@@ -512,8 +516,11 @@ export class PlaidService {
         throw new Error('User not found');
       }
 
-      if (user.plaidUserId === null) {
-        throw new Error('User data not available');
+      if (
+        !user.identityVerification ||
+        user.identityVerification.length === 0
+      ) {
+        throw new Error('User identified has not been verified');
       }
 
       const request: IdentityVerificationListRequest = {
@@ -564,12 +571,10 @@ export class PlaidService {
       }
 
       if (
-        user.phoneNumber === null ||
-        user.givenName === null ||
-        user.familyName === null ||
-        user.documentId === null ||
+        user.idvUserConsent === false ||
         user.dateOfBirth === null ||
-        user.plaidUserId === null
+        user.givenName === null ||
+        user.familyName === null
       ) {
         throw new Error('User data not available');
       }
@@ -634,15 +639,15 @@ export class PlaidService {
         data: {
           plaidUserId: response.user.client_id,
           kycIPAddress: response.user.kyc_ip_address,
-          givenName: response.user.name.given_name,
-          familyName: response.user.name.family_name,
+          givenName: response.user.name?.given_name,
+          familyName: response.user.name?.family_name,
           address: {
             update: {
-              street: response.user.address.street,
-              street2: response.user.address.street2,
-              city: response.user.address.city,
-              postCode: response.user.address.postal_code,
-              country: response.user.address.country,
+              street: response.user.address?.street,
+              street2: response.user.address?.street2,
+              city: response.user.address?.city,
+              postCode: response.user.address?.postal_code,
+              country: response.user.address?.country,
             },
           },
         },

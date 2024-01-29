@@ -106,7 +106,7 @@ model IdentityVerification {
   id                             Int                             @id @default(autoincrement())
   plaidIdvId                     String                          @unique @db.VarChar(255)
   plaidUserId                    String
-  userId                         Int                             @unique
+  userId                         Int                             
   shareable_url                  String?                         @db.VarChar(255)
   verificationStatus             String?                          @db.VarChar(255)
   templateId                     Int
@@ -125,7 +125,7 @@ model IdentityVerification {
 
 model IdvTemplate {
   id                    Int                    @id @default(autoincrement())
-  plaidTemplateId       String                 @unique @db.VarChar(255)
+  plaidTemplateId       String                 
   version               Int
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt

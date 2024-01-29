@@ -109,7 +109,7 @@ export class PlaidController {
     }
   }
 
-  @Post('identity-verification/list/:userId')
+  @Get('identity-verification/list/:userId')
   async listIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
