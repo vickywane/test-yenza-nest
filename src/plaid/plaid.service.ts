@@ -92,9 +92,13 @@ export class PlaidService {
 
       const publicTokenFromDb = user?.plaidPublicToken || '';
 
-      const tokenResponse = await client.itemPublicTokenExchange({
-        public_token: publicToken || publicTokenFromDb,
-      });
+      const tokenResponse = await client
+        .itemPublicTokenExchange({
+          public_token: publicToken || publicTokenFromDb,
+        })
+        .catch((error) => {
+          throw new Error(error.response.data.error_message);
+        });
       const accessToken = tokenResponse.data.access_token;
 
       if (accessToken) {
@@ -323,7 +327,7 @@ export class PlaidService {
         throw new Error('User not found');
       }
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(error.massage);
     }
   }
 
@@ -388,7 +392,7 @@ export class PlaidService {
             street: user.address?.street || '',
             street2: user.address?.street2 || '',
             city: user.address?.city || '',
-            region: '',
+            region: user.address?.state || '',
             postal_code: user.address?.postCode || '',
             country: user.address?.country || '',
           },
@@ -429,8 +433,10 @@ export class PlaidService {
           .identityVerificationCreate(request)
           .then((res) => {
             return res.data;
+          })
+          .catch((error) => {
+            throw new Error(error.response.data.error_message);
           });
-        console.log('Idvresponse', response);
         // save response to db
         const storedData = await this.saveIdvResponseToDb(
           convertedUser,
@@ -470,8 +476,6 @@ export class PlaidService {
         throw new Error('User identity has not been verified');
       }
 
-      console.log('user', user);
-
       const request: IdentityVerificationGetRequest = {
         // ID of the associated Identity verification attempt -> get this from create Idv request.
         identity_verification_id: user.identityVerification[0].plaidIdvId,
@@ -482,7 +486,10 @@ export class PlaidService {
       try {
         const response: IdentityVerificationGetResponse = await client
           .identityVerificationGet(request)
-          .then((res) => res.data);
+          .then((res) => res.data)
+          .catch((error) => {
+            throw new Error(error.response.data.error_message);
+          });
         return response;
       } catch (error) {
         throw new Error(error.message);
@@ -524,7 +531,10 @@ export class PlaidService {
       try {
         const response: IdentityVerificationListResponse = await client
           .identityVerificationList(request)
-          .then((res) => res.data);
+          .then((res) => res.data)
+          .catch((error) => {
+            throw new Error(error.response.data.error_message);
+          });
         return response;
       } catch (error) {
         throw new Error(error.message);
@@ -609,7 +619,10 @@ export class PlaidService {
       // get retry response
       const response: IdentityVerificationRetryResponse = await client
         .identityVerificationRetry(request)
-        .then((res) => res.data);
+        .then((res) => res.data)
+        .catch((error) => {
+          throw new Error(error.response.data.error_message);
+        });
 
       // save response to db
       await this.saveIdvResponseToDb(convertedUser, response);

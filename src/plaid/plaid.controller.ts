@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Next,
   Param,
   Post,
   Res,
@@ -24,10 +23,12 @@ export class PlaidController {
   async getLinkToken(@Res() res: Response) {
     try {
       const response = await this.plaidService.getLinkToken();
-      console.log('response', response);
+      if (!response || response?.error) {
+        throw new Error(response?.error as unknown as string);
+      }
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -45,9 +46,13 @@ export class PlaidController {
         body.metadata,
         body.phoneNumber,
       );
+      if (!response) {
+        throw new Error("Error linking user's bank account");
+      }
+
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -60,10 +65,12 @@ export class PlaidController {
       const response = await this.plaidService.getLinkedBankAccounts(
         Number(userId),
       );
-      console.log('userResponse', response);
+      if (!response) {
+        throw new Error("Unable to get user's linked bank accounts");
+      }
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -78,7 +85,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -93,7 +100,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -108,7 +115,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -126,7 +133,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      res.json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 }
