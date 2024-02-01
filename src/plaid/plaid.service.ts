@@ -78,7 +78,6 @@ export class PlaidService {
         return createTokenResponse.data;
       } catch (error) {
         console.log('error', error.response);
-        throw new Error(error.response);
       }
     });
   }
@@ -113,7 +112,6 @@ export class PlaidService {
       return { accessToken, itemId };
     } catch (error) {
       console.log('error', error.response);
-      throw new Error(error.response);
     }
   }
 
@@ -199,7 +197,7 @@ export class PlaidService {
           // get access token and update access token of the user
           const res = await this.getAccessToken(user.id, publicToken);
           console.log('getAccessToken', res);
-          if (res.accessToken) {
+          if (res?.accessToken) {
             // update account balances
             await this.identityGetAndUpdate(user.id);
           }
@@ -207,8 +205,7 @@ export class PlaidService {
         return user;
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -268,8 +265,7 @@ export class PlaidService {
         });
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -324,11 +320,10 @@ export class PlaidService {
         };
         return userResponse;
       } else {
-        throw new Error('User not found');
+        return null;
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -444,11 +439,10 @@ export class PlaidService {
 
         return storedData;
       } catch (error) {
-        throw new Error(error);
+        return error;
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -491,11 +485,10 @@ export class PlaidService {
           .then((res) => res.data);
         return response;
       } catch (error) {
-        throw new Error(error);
+        return error;
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -534,11 +527,10 @@ export class PlaidService {
           .then((res) => res.data);
         return response;
       } catch (error) {
-        throw new Error(error);
+        return error;
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -624,8 +616,7 @@ export class PlaidService {
 
       return response;
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 
@@ -729,8 +720,7 @@ export class PlaidService {
 
       return { updatedUser, updatedIdv };
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      return error;
     }
   }
 }

@@ -9,7 +9,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { NextFunction, Response } from 'express';
+import { Response } from 'express';
 import { PlaidService } from './plaid.service';
 import { LinkAccountDto } from './dto/linkAccount.dto';
 import { IdentityVerificationRetryDto } from './dto/identityVerification.dto';
@@ -21,14 +21,13 @@ export class PlaidController {
   @Get('link-token')
   // Create a link token with configs which we can then use to initialize Plaid Link client-side.
   // See https://plaid.com/docs/#create-link-token
-  async getLinkToken(@Res() res: Response, @Next() next: NextFunction) {
+  async getLinkToken(@Res() res: Response) {
     try {
       const response = await this.plaidService.getLinkToken();
       console.log('response', response);
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 
@@ -36,11 +35,7 @@ export class PlaidController {
   @UsePipes(ValidationPipe)
   // Exchange token flow - exchange a Link public_token for access token
   // See https://plaid.com/docs/#exchange-token-flow
-  async updateLinkAccounts(
-    @Body() body: LinkAccountDto,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ) {
+  async updateLinkAccounts(@Body() body: LinkAccountDto, @Res() res: Response) {
     try {
       if (!body.publicToken) {
         throw new Error('Public token is required');
@@ -52,8 +47,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 
@@ -61,7 +55,6 @@ export class PlaidController {
   async getLinkedBankAccounts(
     @Param('userId') userId: string,
     @Res() res: Response,
-    @Next() next: NextFunction,
   ) {
     try {
       const response = await this.plaidService.getLinkedBankAccounts(
@@ -70,8 +63,7 @@ export class PlaidController {
       console.log('userResponse', response);
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 
@@ -79,7 +71,6 @@ export class PlaidController {
   async createIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
-    @Next() next: NextFunction,
   ) {
     try {
       const response = await this.plaidService.createIdentityVerification(
@@ -87,8 +78,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 
@@ -96,7 +86,6 @@ export class PlaidController {
   async getIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
-    @Next() next: NextFunction,
   ) {
     try {
       const response = await this.plaidService.getIdentityVerification(
@@ -104,8 +93,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 
@@ -113,7 +101,6 @@ export class PlaidController {
   async listIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
-    @Next() next: NextFunction,
   ) {
     try {
       const response = await this.plaidService.listIdentityVerification(
@@ -121,8 +108,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 
@@ -132,7 +118,6 @@ export class PlaidController {
     @Param('userId') userId: string,
     @Body() body: IdentityVerificationRetryDto,
     @Res() res: Response,
-    @Next() next: NextFunction,
   ) {
     try {
       const response = await this.plaidService.retryIdentityVerification(
@@ -141,8 +126,7 @@ export class PlaidController {
       );
       res.json(response);
     } catch (error) {
-      next(error);
-      throw new Error(error);
+      res.json({ error: error.message });
     }
   }
 }
