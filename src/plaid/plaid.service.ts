@@ -205,7 +205,7 @@ export class PlaidService {
         return user;
       }
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -265,7 +265,7 @@ export class PlaidService {
         });
       }
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -320,10 +320,10 @@ export class PlaidService {
         };
         return userResponse;
       } else {
-        return null;
+        throw new Error('User not found');
       }
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -388,7 +388,7 @@ export class PlaidService {
             street: user.address?.street || '',
             street2: user.address?.street2 || '',
             city: user.address?.city || '',
-            region: user.address?.region || '',
+            region: '',
             postal_code: user.address?.postCode || '',
             country: user.address?.country || '',
           },
@@ -439,10 +439,10 @@ export class PlaidService {
 
         return storedData;
       } catch (error) {
-        return error;
+        throw new Error(error.message);
       }
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -485,10 +485,10 @@ export class PlaidService {
           .then((res) => res.data);
         return response;
       } catch (error) {
-        return error;
+        throw new Error(error.message);
       }
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -527,10 +527,10 @@ export class PlaidService {
           .then((res) => res.data);
         return response;
       } catch (error) {
-        return error;
+        throw new Error(error.message);
       }
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -616,7 +616,7 @@ export class PlaidService {
 
       return response;
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 
@@ -720,7 +720,7 @@ export class PlaidService {
 
       return { updatedUser, updatedIdv };
     } catch (error) {
-      return error;
+      throw new Error(error.message);
     }
   }
 }
