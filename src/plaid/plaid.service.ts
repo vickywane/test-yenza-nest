@@ -392,7 +392,7 @@ export class PlaidService {
             street: user.address?.street || '',
             street2: user.address?.street2 || '',
             city: user.address?.city || '',
-            region: user.address?.state || '',
+            region: user.address?.region || '',
             postal_code: user.address?.postCode || '',
             country: user.address?.country || '',
           },
