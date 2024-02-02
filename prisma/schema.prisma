@@ -50,7 +50,7 @@ model DocumentId {
 
 model OTP {
   id          String                 @id @default(uuid())
-  userId      String                 @unique
+  userId      String                  
   code        String                 @db.VarChar(255)
   phoneNumber String                 @db.VarChar(160)
   email       String                 @db.VarChar(160)

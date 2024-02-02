@@ -25,18 +25,18 @@ export class AuthController {
   @Post('/login')
   @UsePipes(ValidationPipe)
   async login(
-    @Body() body: Pick<UserDto, 'email'>,
+    @Body() body: Partial<Pick<UserDto, 'email' | 'phoneNumber'>>,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
-      if (!body.email) {
-        throw new Error('Phone number and email are required');
+      if (!body.phoneNumber) {
+        return res.status(400).send({ message: 'Phone number or email are required' });
       }
 
       const user = await this.userService.getUser({
         email: body.email,
-        phoneNumber: body.email,
+        phoneNumber: body.phoneNumber,
       });
 
       if (!user) {
@@ -47,10 +47,10 @@ export class AuthController {
 
       // Implement sending OTP to user via email or phoneNumeber
 
-      return res.json({ message: 'OTP Sent' });
+      return res.status(200).json({ message: 'OTP Sent' });
     } catch (error) {
       next(error);
-      res.status(400).json({ message: 'error in login user', error });
+      return res.status(400).json({ message: 'error in login user', error });
     }
   }
 
