@@ -8,7 +8,7 @@ import {
 export class CreatePlaidDto {
   userEntityToUserDto = (userEntity: UserEntity): User => {
     return {
-      id: Number(userEntity.id),
+      id: userEntity.id as string,
       authId: userEntity.authId || null,
       authMethod: AuthMethod.AWS_COGNITO,
       givenName: userEntity.givenName || null,

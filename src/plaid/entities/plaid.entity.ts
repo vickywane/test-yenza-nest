@@ -1,6 +1,6 @@
 import { LinkAccountVerificationStatus } from 'src/plaid/plaid.interface';
 export interface UserEntity {
-  id?: number;
+  id?: string;
   authId?: string;
   authMethod?: AuthMethod;
   countryCode: string;

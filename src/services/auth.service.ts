@@ -13,16 +13,22 @@ export class AuthService {
   async generateJWTToken(
     user: Pick<
       UserDto,
-      'email' | 'firstName' | 'lastName' | 'id' | 'phoneNumber' | 'nationality'
-    >,
+      'email' | 'firstName' | 'lastName' | 'phoneNumber' | 'nationality'
+    > & { id: string },
   ): Promise<string> {
     return await this.jwtService.signAsync(user);
   }
 
   async verifyJWTToken(token: string): Promise<any> {
-    return await this.jwtService.verifyAsync(token, {
-      secret: process.env.JWT_SECRET,
-    });
+    try {
+      return await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
+      });
+    } catch (error) {
+      console.log(`error verifying token`, error);
+
+      throw new Error(error);
+    }
   }
 
   async generateRefreshToken(token: string): Promise<any> {

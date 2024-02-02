@@ -14,10 +14,14 @@ import { UserDto } from 'src/dto/user.dto';
 import { UserKYCDto } from 'src/dto/kyc.dto';
 import { UserService } from 'src/services/user.service';
 import { AuthGuard } from 'src/services/auth.guard';
+import { OtpService } from 'src/services/otp.service';
 
 @Controller('/api/v1/users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly otpService: OtpService,
+  ) {}
 
   @Post()
   @UsePipes(ValidationPipe)
@@ -28,11 +32,15 @@ export class UserController {
   ) {
     try {
       if (!body.phoneNumber || !body.email) {
-        throw new Error('Required user properties are missing');
+        return res
+          .status(400)
+          .send({ message: 'Required user properties are missing' });
       }
 
-      const response = await this.userService.createNewUser(body);
-      res.json({ message: 'kyc details recorded.', data: response });
+      const newUser = await this.userService.createNewUser(body);
+      await this.otpService.generateOTP(newUser.id, 'CREATE_ACCOUNT');
+
+      res.status(200).json(newUser);
     } catch (error) {
       next(error);
       throw new Error(error);
@@ -48,17 +56,20 @@ export class UserController {
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
+
     try {
-      if (!body.postCode || !body.address || !params.userId || !params.userId) {
-        throw new Error('Required user properties are missing');
+      if (!body.postCode || !body.address || !params.userId) {
+        return res
+          .status(400)
+          .send({ message: 'Required user properties are missing' });
       }
 
       await this.userService.insertUserKYC({
-        userId: parseInt(params.userId),
+        userId: params.userId,
         kycDetails: body,
       });
 
-      res.json({ message: 'kyc details recorded.' });
+      res.status(200).json({ message: 'kyc details recorded.' });
     } catch (error) {
       next(error);
       throw new Error(error);

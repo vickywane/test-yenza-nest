@@ -83,7 +83,7 @@ export class PlaidService {
     });
   }
 
-  async getAccessToken(userId: number, publicToken?: string) {
+  async getAccessToken(userId: string, publicToken?: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -212,7 +212,7 @@ export class PlaidService {
     }
   }
 
-  async identityGetAndUpdate(userId: number) {
+  async identityGetAndUpdate(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -273,7 +273,7 @@ export class PlaidService {
     }
   }
 
-  async getLinkedBankAccounts(userId: number) {
+  async getLinkedBankAccounts(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -332,7 +332,7 @@ export class PlaidService {
     }
   }
 
-  async createIdentityVerification(userId: number) {
+  async createIdentityVerification(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -417,7 +417,9 @@ export class PlaidService {
         plaidUserId: user.plaidUserId || '',
         address: {
           ...user.address,
-          id: Number(user.address?.id),
+
+          // @ts-ignore
+          id: user.address?.id,
           street: user.address?.street || '',
           street2: user.address?.street2 || '',
           city: user.address?.city || '',
@@ -453,7 +455,7 @@ export class PlaidService {
     }
   }
 
-  async getIdentityVerification(userId: number) {
+  async getIdentityVerification(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -500,7 +502,7 @@ export class PlaidService {
     }
   }
 
-  async listIdentityVerification(userId: number) {
+  async listIdentityVerification(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -544,7 +546,7 @@ export class PlaidService {
   }
 
   async retryIdentityVerification(
-    userId: number,
+    userId: string,
     retrySteps?: IdentityVerificationRetryRequestStepsObject,
   ) {
     try {
@@ -603,7 +605,9 @@ export class PlaidService {
         plaidUserId: user.plaidUserId || '',
         address: {
           ...user.address,
-          id: Number(user.address?.id),
+
+          // @ts-ignore
+          id: user.address?.id,
           street: user.address?.street || '',
           street2: user.address?.street2 || '',
           city: user.address?.city || '',

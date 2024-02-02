@@ -2,18 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { UserDto } from 'src/dto/user.dto';
 import { UserKYCDto } from 'src/dto/kyc.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getUser(user: Partial<Pick<UserDto, 'email' | 'phoneNumber' | 'id'>>) {
+  async getUser(
+    user: Partial<Pick<UserDto, 'email' | 'phoneNumber'> & { id: string }>,
+  ) {
     try {
       const userExist = await this.prisma?.user.findFirst({
         where: {
           OR: [
             {
-              phoneNumber: user.phoneNumber,
+              phoneNumber: user.phoneNumber, 
             },
             {
               email: user.email,
@@ -45,6 +48,7 @@ export class UserService {
 
       return await this.prisma?.user.create({
         data: {
+          id: uuidv4(),
           email: user.email,
           phoneNumber: user.phoneNumber,
           idvUserConsent: true,
@@ -65,7 +69,7 @@ export class UserService {
     userId,
     kycDetails,
   }: {
-    userId: number;
+    userId: string;
     kycDetails: UserKYCDto;
   }) {
     try {
@@ -88,7 +92,7 @@ export class UserService {
           street: kycDetails.address,
           postCode: kycDetails.postCode,
           country: kycDetails.countryCode,
-          userId
+          userId,
         },
       });
 

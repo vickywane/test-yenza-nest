@@ -11,6 +11,7 @@ import { UserController } from './user/user.controller';
 import { UserService } from './services/user.service';
 import { AuthService } from './services/auth.service';
 import { JwtModule } from '@nestjs/jwt';
+import { OtpService } from './services/otp.service';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { JwtModule } from '@nestjs/jwt';
   ],
   controllers: [AppController, AuthController, UserController],
   providers: [
+    OtpService,
     AppService,
     AuthService,
     PrismaService,

@@ -4,6 +4,7 @@ import {
   Get,
   Next,
   Post,
+  Render,
   Res,
   UsePipes,
   ValidationPipe,
@@ -11,14 +12,33 @@ import {
 import { AppService } from './app.service';
 import { NextFunction, Response } from 'express';
 import { SignUpUserDto } from './dto/signupuser.dto';
+import { OtpService } from './services/otp.service';
 
 @Controller('/')
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly otpService: OtpService,
+  ) {}
 
   @Get()
   getHello(): string {
     return 'Hello World!';
+  }
+
+  @Get('/json-mock-otps')
+  async getOTPsJSON(@Res() res: Response) {
+    const allOTPs = await this.otpService.listAllOTPs();
+
+    return res.status(200).send({ data: allOTPs });
+  }
+
+  @Get('/mock-otps')
+  @Render('otps')
+  async getOTPs(@Res() res: Response) {
+    const allOTPs = await this.otpService.listAllOTPs();
+
+    return { data: allOTPs }
   }
 
   @Post('sign-up')

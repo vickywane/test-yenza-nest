@@ -64,9 +64,7 @@ export class PlaidController {
     @Next() next: NextFunction,
   ) {
     try {
-      const response = await this.plaidService.getLinkedBankAccounts(
-        Number(userId),
-      );
+      const response = await this.plaidService.getLinkedBankAccounts(userId);
       console.log('userResponse', response);
       res.json(response);
     } catch (error) {
@@ -82,9 +80,8 @@ export class PlaidController {
     @Next() next: NextFunction,
   ) {
     try {
-      const response = await this.plaidService.createIdentityVerification(
-        Number(userId),
-      );
+      const response =
+        await this.plaidService.createIdentityVerification(userId);
       res.json(response);
     } catch (error) {
       next(error);
@@ -100,7 +97,7 @@ export class PlaidController {
   ) {
     try {
       const response = await this.plaidService.getIdentityVerification(
-        Number(userId),
+        userId,
       );
       res.json(response);
     } catch (error) {
@@ -117,7 +114,7 @@ export class PlaidController {
   ) {
     try {
       const response = await this.plaidService.listIdentityVerification(
-        Number(userId),
+        userId,
       );
       res.json(response);
     } catch (error) {
@@ -136,7 +133,7 @@ export class PlaidController {
   ) {
     try {
       const response = await this.plaidService.retryIdentityVerification(
-        Number(userId),
+        userId,
         body.retrySteps,
       );
       res.json(response);
