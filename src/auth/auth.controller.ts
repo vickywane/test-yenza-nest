@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { NextFunction, Response } from 'express';
 import { UserDto } from 'src/dto/user.dto';
-import { UserService } from 'src/services/user.service';
-import { AuthService } from 'src/services/auth.service';
+import { UserService } from 'src/user/user.service';
+import { AuthService } from 'src/auth/auth.service';
 import { OtpService } from 'src/services/otp.service';
 import { OTP_GENERATION_PURPOSE } from '@prisma/client';
 
@@ -87,7 +87,6 @@ export class AuthController {
       purpose: OTP_GENERATION_PURPOSE;
     },
     @Res() res: Response,
-    @Next() next: NextFunction,
   ) {
     try {
       if (!body.phoneNumber || !body.code) {
@@ -121,7 +120,6 @@ export class AuthController {
         nationality: user.countryCode as string,
         phoneNumber: user.phoneNumber,
       });
-
       await this.otpService.updateOTPStatus(matchCode.id, 'VALIDATED');
 
       res.status(200).json({
@@ -131,7 +129,7 @@ export class AuthController {
         refreshToken: '',
       });
     } catch (error) {
-      next(error);
+      console.log('error in verify-otp', error);
       res.status(400).json({ message: 'error in verify-otp', error });
     }
   }

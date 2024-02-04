@@ -13,7 +13,7 @@ import { PlaidService } from './plaid.service';
 import { LinkAccountDto } from './dto/linkAccount.dto';
 import { IdentityVerificationRetryDto } from './dto/identityVerification.dto';
 
-@Controller('plaid')
+@Controller('api/v1/plaid')
 export class PlaidController {
   constructor(private readonly plaidService: PlaidService) {}
 
@@ -72,7 +72,7 @@ export class PlaidController {
     }
   }
 
-  @Post('identity-verification/create/:userId')
+  @Post('kyc/create/:userId')
   async createIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
@@ -86,7 +86,7 @@ export class PlaidController {
     }
   }
 
-  @Get('identity-verification/:userId')
+  @Get('kyc/:userId')
   async getIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
@@ -99,7 +99,7 @@ export class PlaidController {
     }
   }
 
-  @Get('identity-verification/list/:userId')
+  @Get('kyc/list/:userId')
   async listIdentityVerification(
     @Param('userId') userId: string,
     @Res() res: Response,
@@ -112,7 +112,7 @@ export class PlaidController {
     }
   }
 
-  @Post('identity-verification/retry/:userId')
+  @Post('kyc/retry/:userId')
   @UsePipes(ValidationPipe)
   async retryIdentityVerification(
     @Param('userId') userId: string,

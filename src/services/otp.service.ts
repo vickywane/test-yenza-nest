@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { generate as OTPGenerate } from 'otp-generator';
 
-import { UserService } from './user.service';
+import { UserService } from '../user/user.service';
 import { UserDto } from 'src/dto/user.dto';
 import { PrismaService } from 'src/prisma.service';
 
@@ -89,7 +89,7 @@ export class OtpService {
     }
   }
 
-  async updateOTPStatus(codeId: string, status : OTP_STATUS) {
+  async updateOTPStatus(codeId: string, status: OTP_STATUS) {
     try {
       const update = await this.prismaService.oTP.update({
         where: {

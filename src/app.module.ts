@@ -8,8 +8,8 @@ import { PlaidService } from './plaid/plaid.service';
 
 import { AuthController } from './auth/auth.controller';
 import { UserController } from './user/user.controller';
-import { UserService } from './services/user.service';
-import { AuthService } from './services/auth.service';
+import { UserService } from './user/user.service';
+import { AuthService } from './auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { OtpService } from './services/otp.service';
 
