@@ -31,7 +31,9 @@ export class AuthController {
   ) {
     try {
       if (!body.phoneNumber) {
-        return res.status(400).send({ message: 'Phone number or email are required' });
+        return res
+          .status(400)
+          .send({ message: 'Phone number or email are required' });
       }
 
       const user = await this.userService.getUser({

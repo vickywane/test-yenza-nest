@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 const PORT = process.env.APP_PORT || 3000;
 
@@ -13,7 +14,14 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '../../', 'public'));
   app.setBaseViewsDir(join(__dirname, '../../', 'views'));
   app.setViewEngine('hbs');
- 
+
+  const config = new DocumentBuilder()
+    .setTitle('Yyenza API')
+    .setDescription('Yyenza API description')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
   await app.listen(PORT);
 }
 bootstrap();
