@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <title>Mock OTPS</title>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+
+    <script src='https://cdn.tailwindcss.com'></script>
+  </head>
+  <body>
+
+    <h1 class='text-center text-3xl mt-12'> All Mock OTPs </h1>
+
+    <div class='overflow-hidden mt-12'>
+      <table class='min-w-full text-left text-sm font-light'>
+        <thead class='border-b font-medium dark:border-neutral-500'>
+          <tr>
+            <th scope='col' class='px-6 py-4 text-xl'>ID</th>
+            <th scope='col' class='px-6 py-4 text-xl'>Email</th>
+            <th scope='col' class='px-6 py-4 text-xl'>Phone Number</th>
+            <th scope='col' class='px-6 py-4 text-xl'>Code</th>
+            <th scope='col' class='px-6 py-4 text-xl'>Purpose</th>
+            <th scope='col' class='px-6 py-4 text-xl'>Status</th>
+            <th scope='col' class='px-6 py-4 text-xl'>Created At</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {{#each data}}
+            <tr class='border-b dark:border-neutral-500'>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'># {{id}}</td>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'>{{email}}</td>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'>{{phoneNumber}}</td>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'>{{code}}</td>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'>{{purpose}}</td>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'>{{status}}</td>
+              <td class='whitespace-nowrap px-6 py-4 text-xl'>{{createdAt}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+
+      </table>
+    </div>
+  </body>
+</html>

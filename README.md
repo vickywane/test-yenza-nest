@@ -10,29 +10,35 @@ This is the main NestJS application for yyenza.
 
 ## Prerequisites
 
-This app is run on a docker compose environment for convenience. Before you get started, you'll need to install a few tools:
+### Start NestJS app (with Postgres DB run on docker)
+This app can be either run on a docker compose environment or local environment for convenience. Postgres DB will be run on a docker environment. Before you get started, you'll need to install a few tools:
 
-1. **Docker**: This is used to create, deploy, and run applications by using containers.
-    - [Install Docker](https://docs.docker.com/get-docker/)
+1. **Run NestJS app Locally**:
+- To run locally, install the dependencies
+```
+// install dependencies
+npm install
+
+// generate types using prisma cli and initialise database
+npx prisma generate && npx prisma migrate dev
+
+// seed data to db
+npx prisma db seed
+
+// start the app
+npm run start:dev
+
+```
+   - App should be running at `http://localhost:3000/`
+   - If you send a GET request to `http://localhost:3000/` you should get "Hello World!"
+
 
 2. **Docker Compose**: This tool is used for defining and running multi-container Docker applications.
-    - [Install Docker Compose](https://docs.docker.com/compose/install/)
-
-3. **Alternative to Docker**: If you prefer not to use Docker, you can use Podman.
-    - [Install Podman](https://podman.io/getting-started/installation)
-
-## Setup
-
-Follow these steps to get your development environment set up:
-
-1. **Clone the repository**
-   ```bash
-   git clone git@github.com:YYENZA/yyenza-nest.git ; cd yyenza-nest
-
-2. **Build and run with docker compose**
-   ```bash
-   docker compose up --build
-
-3. Application should be running at http://localhost:3000
+- [Install Docker Compose Desktop and cli](https://docs.docker.com/compose/install/)
+- Run the following command to start the app (http://localhost:3000) and Postgres  in docker
+- Note that in `docker-compose.yml` file, `DB_HOST` must be equal to the database service name (ie:`db` in the docker-compose file)
+```
+docker compose up -d
+```
    
 # Troubleshooting

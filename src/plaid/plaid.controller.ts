@@ -62,9 +62,7 @@ export class PlaidController {
     @Res() res: Response,
   ) {
     try {
-      const response = await this.plaidService.getLinkedBankAccounts(
-        Number(userId),
-      );
+      const response = await this.plaidService.getLinkedBankAccounts(userId);
       if (!response) {
         throw new Error("Unable to get user's linked bank accounts");
       }
@@ -80,9 +78,8 @@ export class PlaidController {
     @Res() res: Response,
   ) {
     try {
-      const response = await this.plaidService.createIdentityVerification(
-        Number(userId),
-      );
+      const response =
+        await this.plaidService.createIdentityVerification(userId);
       res.json(response);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -95,9 +92,7 @@ export class PlaidController {
     @Res() res: Response,
   ) {
     try {
-      const response = await this.plaidService.getIdentityVerification(
-        Number(userId),
-      );
+      const response = await this.plaidService.getIdentityVerification(userId);
       res.json(response);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -110,9 +105,7 @@ export class PlaidController {
     @Res() res: Response,
   ) {
     try {
-      const response = await this.plaidService.listIdentityVerification(
-        Number(userId),
-      );
+      const response = await this.plaidService.listIdentityVerification(userId);
       res.json(response);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -128,7 +121,7 @@ export class PlaidController {
   ) {
     try {
       const response = await this.plaidService.retryIdentityVerification(
-        Number(userId),
+        userId,
         body.retrySteps,
       );
       res.json(response);

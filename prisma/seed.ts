@@ -26,7 +26,7 @@ async function main() {
       },
       documentId: {
         create: {
-          type: 'us_ssn',
+          type: 'DRIVING_LICENSE',
           value: '123456789',
           updatedAt: new Date().toISOString(),
         },

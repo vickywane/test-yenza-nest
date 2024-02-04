@@ -8,7 +8,7 @@ import {
 export class CreatePlaidDto {
   userEntityToUserDto = (userEntity: UserEntity): User => {
     return {
-      id: Number(userEntity.id),
+      id: userEntity.id as string,
       authId: userEntity.authId || null,
       authMethod: AuthMethod.AWS_COGNITO,
       givenName: userEntity.givenName || null,
@@ -18,6 +18,7 @@ export class CreatePlaidDto {
       idvUserConsentDate: userEntity.idvUserConsentDate || null,
       idvUserId: userEntity.idvUserId || null,
       phoneNumber: userEntity.phoneNumber,
+      countryCode: userEntity.countryCode,
       phoneNumberVerified: userEntity.phoneNumberVerified || false,
       emailVerified: userEntity.emailVerified || false,
       kycStatus: userEntity.kycStatus || null,
@@ -36,6 +37,7 @@ export class CreatePlaidDto {
     return {
       id: user.id,
       authId: user.authId || '',
+      countryCode: user.countryCode as string,
       authMethod: (user.authMethod ||
         AuthMethodEntity.AWS_COGNITO) as AuthMethodEntity,
       givenName: user.givenName || '',
