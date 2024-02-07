@@ -1,32 +1,36 @@
 import { LinkAccountVerificationStatus } from 'src/plaid/plaid.interface';
 export interface UserEntity {
-  id?: number;
+  id?: string;
   authId?: string;
   authMethod?: AuthMethod;
+  countryCode: string;
   givenName: string;
   familyName: string;
   email?: string;
   idvUserConsent?: boolean;
-  idvUserConsentDate?: string | Date;
+  idvUserConsentDate?: string;
   idvUserId?: string;
   phoneNumber: string;
   phoneNumberVerified?: boolean;
-  emailVerified?: string;
+  emailVerified?: boolean;
   kycStatus?: KYCStatus;
-  dateOfBirth?: string | Date;
+  dateOfBirth?: string;
   addressId?: string;
   address?: Address;
   linkedAccounts?: LinkedAccountEntity[];
   linkedInstitutions?: LinkInstitutionEntity[];
   plaidPublicToken?: string;
   plaidAccessToken?: string;
+  kycIPAddress?: string;
+  plaidUserId?: string;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
 
 export interface LinkedAccountEntity {
-  id?: number;
+  id?: string;
   plaidAccountId: string;
+  countryCode: string;
   userId: string;
   name: string;
   officialName: string;
@@ -48,7 +52,7 @@ export interface LinkedAccountEntity {
 }
 
 export interface LinkInstitutionEntity {
-  id?: number;
+  id?: string;
   plaidInstitutionId: string;
   name: string;
   createdAt: string | Date;
@@ -67,7 +71,7 @@ export enum AuthMethod {
 }
 
 export interface Address {
-  id?: number;
+  id?: string;
   street: string;
   street2?: string;
   city: string;

@@ -16,13 +16,13 @@ import {
   IdentityVerificationRetryRequest,
   Strategy,
   IdentityVerificationRetryResponse,
+  IdentityVerificationRetryRequestStepsObject,
 } from 'plaid';
-import { PrismaClient } from '@prisma/client';
+import { IdentityVerification, User } from '@prisma/client';
 import { LinkAccount, LinkSuccessMetadata } from './plaid.interface';
 import { format } from 'date-fns';
-
-const dotenv = require('dotenv');
-dotenv?.config();
+import { CreatePlaidDto } from './dto/create-plaid.dto';
+import { PrismaService } from 'src/prisma.service';
 
 const PLAID_PRODUCTS = (
   process.env.PLAID_PRODUCTS || Products.Transactions
@@ -52,10 +52,12 @@ const configuration = new Configuration({
 });
 
 const client = new PlaidApi(configuration);
-const prisma = new PrismaClient();
+const plaidDto = new CreatePlaidDto();
 
 @Injectable()
 export class PlaidService {
+  constructor(private prisma: PrismaService) {}
+
   async getLinkToken() {
     return Promise.resolve().then(async function () {
       const configs: LinkTokenCreateRequest = {
@@ -76,14 +78,13 @@ export class PlaidService {
         return createTokenResponse.data;
       } catch (error) {
         console.log('error', error.response);
-        throw new Error(error.response);
       }
     });
   }
 
-  async getAccessToken(userId: number, publicToken?: string) {
+  async getAccessToken(userId: string, publicToken?: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -91,13 +92,17 @@ export class PlaidService {
 
       const publicTokenFromDb = user?.plaidPublicToken || '';
 
-      const tokenResponse = await client.itemPublicTokenExchange({
-        public_token: publicToken || publicTokenFromDb,
-      });
+      const tokenResponse = await client
+        .itemPublicTokenExchange({
+          public_token: publicToken || publicTokenFromDb,
+        })
+        .catch((error) => {
+          throw new Error(error.response.data.error_message);
+        });
       const accessToken = tokenResponse.data.access_token;
 
       if (accessToken) {
-        await prisma.user.update({
+        await this.prisma.user.update({
           where: {
             id: userId,
           },
@@ -111,7 +116,6 @@ export class PlaidService {
       return { accessToken, itemId };
     } catch (error) {
       console.log('error', error.response);
-      throw new Error(error.response);
     }
   }
 
@@ -130,7 +134,7 @@ export class PlaidService {
     const { institution, accounts } = linkAccounts;
     try {
       // get user from database
-      const user = await prisma.user.findFirstOrThrow({
+      const user = await this.prisma.user.findFirstOrThrow({
         where: {
           phoneNumber: phoneNumber,
         },
@@ -142,7 +146,7 @@ export class PlaidService {
 
       if (institution) {
         // update institution
-        await prisma.linkInstitution.upsert({
+        await this.prisma.linkInstitution.upsert({
           where: {
             plaidInstitutionId: institution.id,
           },
@@ -169,7 +173,7 @@ export class PlaidService {
 
         if (newAccounts.length > 0) {
           // create new accounts
-          await prisma.linkedAccount.createMany({
+          await this.prisma.linkedAccount.createMany({
             data: newAccounts.map((account) => ({
               plaidAccountId: account.id,
               name: account.name,
@@ -185,7 +189,7 @@ export class PlaidService {
         if (publicToken) {
           // update public token of the user
           console.log('publicToken', publicToken);
-          await prisma.user.update({
+          await this.prisma.user.update({
             where: {
               id: user.id,
             },
@@ -197,7 +201,7 @@ export class PlaidService {
           // get access token and update access token of the user
           const res = await this.getAccessToken(user.id, publicToken);
           console.log('getAccessToken', res);
-          if (res.accessToken) {
+          if (res?.accessToken) {
             // update account balances
             await this.identityGetAndUpdate(user.id);
           }
@@ -205,14 +209,13 @@ export class PlaidService {
         return user;
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.message);
     }
   }
 
-  async identityGetAndUpdate(userId: number) {
+  async identityGetAndUpdate(userId: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -236,7 +239,7 @@ export class PlaidService {
 
       if (response.data.accounts.length > 0) {
         response.data.accounts.forEach(async (account) => {
-          await prisma.linkedAccount.update({
+          await this.prisma.linkedAccount.update({
             where: {
               plaidAccountId: account.account_id,
               userId: user.id,
@@ -266,14 +269,13 @@ export class PlaidService {
         });
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.message);
     }
   }
 
-  async getLinkedBankAccounts(userId: number) {
+  async getLinkedBankAccounts(userId: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -292,14 +294,14 @@ export class PlaidService {
         const plaidAccountIds = user.linkedAccounts.map(
           (account) => account.plaidAccountId,
         );
-        const linkedInstitutions = await prisma.linkInstitution.findMany({
+        const linkedInstitutions = await this.prisma.linkInstitution.findMany({
           where: {
             plaidInstitutionId: {
               in: linkedInstitutionsIds,
             },
           },
         });
-        const balances = await prisma.balances.findMany({
+        const balances = await this.prisma.balances.findMany({
           where: {
             plaidAccountId: {
               in: plaidAccountIds,
@@ -325,14 +327,13 @@ export class PlaidService {
         throw new Error('User not found');
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.massage);
     }
   }
 
-  async createIdentityVerification(userId: number) {
+  async createIdentityVerification(userId: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -342,27 +343,34 @@ export class PlaidService {
           phoneNumberVerified: true,
           email: true,
           address: true,
-          plaidClientId: true,
+          plaidUserId: true,
           idvUserConsent: true,
           dateOfBirth: true,
           givenName: true,
           familyName: true,
           documentId: true,
+          identityVerification: true,
         },
       });
 
+      // check if user exists
       if (!user) {
         throw new Error('User not found');
       }
 
+      // check if user has given consent and has all the required data
       if (
         user.idvUserConsent === false ||
         user.dateOfBirth === null ||
         user.givenName === null ||
-        user.familyName === null ||
-        user.documentId === null
+        user.familyName === null
       ) {
         throw new Error('User data not available');
+      }
+
+      // check if user already has an identity verification
+      if (user.identityVerification && user.identityVerification.length > 0) {
+        throw new Error('User already has an identity verification');
       }
 
       const request: IdentityVerificationCreateRequest = {
@@ -384,39 +392,77 @@ export class PlaidService {
             street: user.address?.street || '',
             street2: user.address?.street2 || '',
             city: user.address?.city || '',
-            region: user.address?.city || '',
+            region: user.address?.region || '',
             postal_code: user.address?.postCode || '',
             country: user.address?.country || '',
           },
           id_number: {
-            value: user.documentId.value,
-            type: (user.documentId.type as IDNumberType) || null,
+            value: user.documentId?.value || '',
+            type: (user.documentId?.type as IDNumberType) || null,
           },
         },
       };
+
+      const convertedUser: User = plaidDto.userEntityToUserDto({
+        ...user,
+        countryCode: '',
+        createdAt: new Date().toISOString() || '',
+        updatedAt: new Date().toISOString() || '',
+        givenName: user.givenName || '',
+        familyName: user.familyName || '',
+        idvUserConsent: user.idvUserConsent || false,
+        phoneNumberVerified: user.phoneNumberVerified || false,
+        dateOfBirth: user.dateOfBirth || '',
+        plaidUserId: user.plaidUserId || '',
+        address: {
+          ...user.address,
+          id: user.address?.id,
+          street: user.address?.street || '',
+          street2: user.address?.street2 || '',
+          city: user.address?.city || '',
+          postCode: user.address?.postCode || '',
+          country: user.address?.country || '',
+          state: user.address?.state || '',
+          createdAt: user.address?.createdAt || '',
+          updatedAt: user.address?.updatedAt || '',
+          userId: user.address?.userId?.toString() || '',
+        },
+      });
+
       try {
         const response: IdentityVerificationCreateResponse = await client
           .identityVerificationCreate(request)
-          .then((res) => res.data);
-        return response;
+          .then((res) => {
+            return res.data;
+          })
+          .catch((error) => {
+            throw new Error(error.response.data.error_message);
+          });
+        // save response to db
+        const storedData = await this.saveIdvResponseToDb(
+          convertedUser,
+          response,
+        );
+
+        return storedData;
       } catch (error) {
-        throw new Error(error);
+        throw new Error(error.message);
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.message);
     }
   }
 
-  async getIdentityVerification(userId: number) {
+  async getIdentityVerification(userId: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
         select: {
           id: true,
-          plaidClientId: true,
+          plaidUserId: true,
+          identityVerification: true,
         },
       });
 
@@ -424,40 +470,46 @@ export class PlaidService {
         throw new Error('User not found');
       }
 
-      if (user.plaidClientId === null) {
-        throw new Error('User data not available');
+      if (
+        !user.identityVerification ||
+        user.identityVerification.length === 0
+      ) {
+        throw new Error('User identity has not been verified');
       }
 
       const request: IdentityVerificationGetRequest = {
         // ID of the associated Identity verification attempt -> get this from create Idv request.
-        identity_verification_id: '',
+        identity_verification_id: user.identityVerification[0].plaidIdvId,
         secret: PLAID_SECRET,
-        client_id: user.plaidClientId,
+        client_id: user.plaidUserId || '',
       };
 
       try {
         const response: IdentityVerificationGetResponse = await client
           .identityVerificationGet(request)
-          .then((res) => res.data);
+          .then((res) => res.data)
+          .catch((error) => {
+            throw new Error(error.response.data.error_message);
+          });
         return response;
       } catch (error) {
-        throw new Error(error);
+        throw new Error(error.message);
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.message);
     }
   }
 
-  async listIdentityVerification(userId: number) {
+  async listIdentityVerification(userId: string) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
         select: {
           id: true,
-          plaidClientId: true,
+          plaidUserId: true,
+          identityVerification: true,
         },
       });
 
@@ -465,8 +517,11 @@ export class PlaidService {
         throw new Error('User not found');
       }
 
-      if (user.plaidClientId === null) {
-        throw new Error('User data not available');
+      if (
+        !user.identityVerification ||
+        user.identityVerification.length === 0
+      ) {
+        throw new Error('User identified has not been verified');
       }
 
       const request: IdentityVerificationListRequest = {
@@ -477,20 +532,25 @@ export class PlaidService {
       try {
         const response: IdentityVerificationListResponse = await client
           .identityVerificationList(request)
-          .then((res) => res.data);
+          .then((res) => res.data)
+          .catch((error) => {
+            throw new Error(error.response.data.error_message);
+          });
         return response;
       } catch (error) {
-        throw new Error(error);
+        throw new Error(error.message);
       }
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.message);
     }
   }
 
-  async retryIdentityVerification(userId: number) {
+  async retryIdentityVerification(
+    userId: string,
+    retrySteps?: IdentityVerificationRetryRequestStepsObject,
+  ) {
     try {
-      const user = await prisma.user.findFirst({
+      const user = await this.prisma.user.findFirst({
         where: {
           id: userId,
         },
@@ -500,7 +560,7 @@ export class PlaidService {
           phoneNumberVerified: true,
           email: true,
           address: true,
-          plaidClientId: true,
+          plaidUserId: true,
           idvUserConsent: true,
           dateOfBirth: true,
           givenName: true,
@@ -514,35 +574,168 @@ export class PlaidService {
       }
 
       if (
-        user.phoneNumber === null ||
-        user.givenName === null ||
-        user.familyName === null ||
-        user.documentId === null ||
+        user.idvUserConsent === false ||
         user.dateOfBirth === null ||
-        user.plaidClientId === null
+        user.givenName === null ||
+        user.familyName === null
       ) {
         throw new Error('User data not available');
       }
 
       const request: IdentityVerificationRetryRequest = {
-        secret: PLAID_SECRET,
         template_id: PLAID_IDV_TEMPLATE_ID,
+        client_user_id: user.id.toString() || '',
+        secret: PLAID_SECRET,
+        client_id: user.plaidUserId || '',
         strategy: Strategy.Reset,
-        client_id: user.plaidClientId,
-        client_user_id: user.id.toString(),
+        steps: retrySteps,
       };
 
-      try {
-        const response: IdentityVerificationRetryResponse = await client
-          .identityVerificationRetry(request)
-          .then((res) => res.data);
-        return response;
-      } catch (error) {
-        throw new Error(error);
-      }
+      // convert to User type
+      const convertedUser: User = plaidDto.userEntityToUserDto({
+        ...user,
+        countryCode: '',
+        createdAt: new Date().toISOString() || '',
+        updatedAt: new Date().toISOString() || '',
+        givenName: user.givenName || '',
+        familyName: user.familyName || '',
+        idvUserConsent: user.idvUserConsent || false,
+        phoneNumberVerified: user.phoneNumberVerified || false,
+        dateOfBirth: user.dateOfBirth || '',
+        plaidUserId: user.plaidUserId || '',
+        address: {
+          ...user.address,
+          id: user.address?.id,
+          street: user.address?.street || '',
+          street2: user.address?.street2 || '',
+          city: user.address?.city || '',
+          postCode: user.address?.postCode || '',
+          country: user.address?.country || '',
+          state: user.address?.state || '',
+          createdAt: user.address?.createdAt || '',
+          updatedAt: user.address?.updatedAt || '',
+          userId: user.address?.userId?.toString() || '',
+        },
+      });
+
+      // get retry response
+      const response: IdentityVerificationRetryResponse = await client
+        .identityVerificationRetry(request)
+        .then((res) => res.data)
+        .catch((error) => {
+          throw new Error(error.response.data.error_message);
+        });
+
+      // save response to db
+      await this.saveIdvResponseToDb(convertedUser, response);
+
+      return response;
     } catch (error) {
-      console.log('error', error);
-      throw new Error(error);
+      throw new Error(error.message);
+    }
+  }
+
+  async saveIdvResponseToDb(user: User, response: any) {
+    try {
+      // update user
+      const updatedUser = await this.prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          plaidUserId: response.user.client_id,
+          kycIPAddress: response.user.kyc_ip_address,
+          givenName: response.user.name?.given_name,
+          familyName: response.user.name?.family_name,
+          address: {
+            update: {
+              street: response.user.address?.street,
+              street2: response.user.address?.street2,
+              city: response.user.address?.city,
+              postCode: response.user.address?.postal_code,
+              country: response.user.address?.country,
+            },
+          },
+        },
+        select: {
+          id: true,
+          familyName: true,
+          givenName: true,
+          email: true,
+          phoneNumber: true,
+          dateOfBirth: true,
+          identityVerification: true,
+          kycStatus: true,
+          plaidUserId: true,
+          address: true,
+          documentId: true,
+        },
+      });
+
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+
+      let updatedIdv: IdentityVerification | null = null;
+
+      if (
+        updatedUser.identityVerification &&
+        updatedUser.identityVerification.length > 0 &&
+        updatedUser.identityVerification.find(
+          (idv) => idv.plaidIdvId === response.id,
+        )
+      ) {
+        updatedIdv = await this.prisma.identityVerification.update({
+          where: {
+            plaidIdvId: response.id,
+            userId: user.id,
+          },
+          data: {
+            plaidIdvId: response.id,
+            plaidUserId: user.plaidUserId || '',
+            template: {
+              update: {
+                plaidTemplateId: response.template.id,
+                version: response.template.version,
+              },
+            },
+            verificationStatus: response.status,
+            shareable_url: response.shareable_url,
+            watchlist_screening_id: response.watchlist_screening_id,
+            redacted_at: response.redacted_at,
+            request_id: response.request_id,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } else {
+        updatedIdv = await this.prisma.identityVerification.create({
+          data: {
+            plaidIdvId: response.id,
+            plaidUserId: user.plaidUserId || '',
+            template: {
+              create: {
+                plaidTemplateId: response.template.id,
+                version: response.template.version,
+              },
+            },
+            verificationStatus: response.status,
+            shareable_url: response.shareable_url,
+            watchlist_screening_id: response.watchlist_screening_id,
+            redacted_at: response.redacted_at,
+            request_id: response.request_id,
+            updatedAt: new Date().toISOString(),
+            user: {
+              connect: {
+                id: user.id,
+              },
+            },
+          },
+        });
+      }
+
+      return { updatedUser, updatedIdv };
+    } catch (error) {
+      throw new Error(error.message);
     }
   }
 }

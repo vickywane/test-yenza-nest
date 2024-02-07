@@ -1,27 +1,32 @@
-import { Body, Controller, Next, Post, Res } from '@nestjs/common';
+import { Controller, Get, Render, Res } from '@nestjs/common';
 import { AppService } from './app.service';
-import { SignUpUser } from './plaid/plaid.interface';
-import { NextFunction, Response } from 'express';
+import { Response } from 'express';
+import { OtpService } from './services/otp.service';
 
 @Controller('/')
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly otpService: OtpService,
+  ) {}
 
-  @Post('sign-up')
-  async signUp(
-    @Body() body: SignUpUser,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ) {
-    try {
-      if (!body.phoneNumber || !body.email) {
-        throw new Error('Phone number and email are required');
-      }
-      const response = await this.appService.createNewUser(body);
-      res.json(response);
-    } catch (error) {
-      next(error);
-      throw new Error(error);
-    }
+  @Get()
+  getHello(): string {
+    return 'Hello World!';
+  }
+
+  @Get('/json-mock-otps')
+  async getOTPsJSON(@Res() res: Response) {
+    const allOTPs = await this.otpService.listAllOTPs();
+
+    return res.status(200).send({ data: allOTPs });
+  }
+
+  @Get('/mock-otps')
+  @Render('otps')
+  async getOTPs() {
+    const allOTPs = await this.otpService.listAllOTPs();
+
+    return { data: allOTPs };
   }
 }

@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { SignUpUser } from './plaid/plaid.interface';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from './prisma.service';
+import { PlaidService } from './plaid/plaid.service';
 
-const prisma = new PrismaClient();
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
-  }
+  constructor(
+    private prisma: PrismaService,
+    private plaidService: PlaidService,
+  ) {}
 
   async createNewUser(user: SignUpUser) {
     try {
-      const userExist = !!(await prisma.user.findFirst({
+      const userExist = !!(await this.prisma.user.findFirst({
         where: {
           OR: [
             {
@@ -27,13 +28,13 @@ export class AppService {
         throw new Error('User already exist');
       }
 
-      const newUser = await prisma.user.create({
+      const newUser = await this.prisma.user.create({
         data: {
           // givenName: user.givenName || '',
           // familyName: user.familyName || '',
           email: user.email,
           phoneNumber: user.phoneNumber,
-          // dateOfBirth: user.dateOfBirth || '',
+          idvUserConsent: true,
         },
       });
 
@@ -61,6 +62,8 @@ export class AppService {
       //     },
       //   });
       // }
+
+      // await this.plaidService.createIdentityVerification(newUser.id);
 
       return newUser;
     } catch (error) {

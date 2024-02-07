@@ -1,35 +1,369 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
-  id                  Int               @id @default(autoincrement())
-  authId              String?           @unique @db.VarChar(255)
-  authMethod          AuthMethod        @default(AWS_COGNITO)
-  givenName           String?            @db.VarChar(255)
-  familyName          String?            @db.VarChar(255)
-  email               String           @unique @db.VarChar(255)
-  idvUserConsent      Boolean?          @default(false)
-  idvUserConsentDate  DateTime?
-  idvUserId           String?           @unique @db.VarChar(255)
-  phoneNumber         String            @unique @db.VarChar(255)
-  phoneNumberVerified Boolean?           @default(false)
-  emailVerified       Boolean?          @default(false)
-  kycStatus           KYCStatus?         @default(unverified)
-  dateOfBirth         String?
-  addressId           String?
-  address             Address?
-  linkedAccounts      LinkedAccount[]
-  linkedInstitutions  LinkInstitution[]
-  plaidPublicToken    String?           @db.VarChar(255)
-  plaidAccessToken    String?           @db.VarChar(255)
+  id                   String                 @id @default(uuid())
+  authId               String?                @unique @db.VarChar(255)
+  authMethod           AuthMethod             @default(AWS_COGNITO)
+  givenName            String?                @db.VarChar(255)
+  familyName           String?                @db.VarChar(255)
+  countryCode          String?                @db.VarChar(6)
+  email                String                 @unique @db.VarChar(255)
+  idvUserConsent       Boolean?               @default(false)
+  idvUserConsentDate   String?
+  idvUserId            String?                @unique @db.VarChar(255)
+  phoneNumber          String                 @unique @db.VarChar(255)
+  phoneNumberVerified  Boolean?               @default(false)
+  emailVerified        Boolean?               @default(false)
+  kycStatus            KYCStatus?             @default(unverified)
+  kycIPAddress         String?
+  dateOfBirth          String?
+  addressId            String?
+  plaidPublicToken     String?                @db.VarChar(255)
+  plaidAccessToken     String?                @db.VarChar(255)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  plaidUserId          String?                @unique @db.VarChar(255)
+  address              Address?
+  documentId           DocumentId?
+  identityVerification IdentityVerification[]
+  generatedOtps        OTP[]
+  linkedAccounts       LinkedAccount[]
+  linkedInstitutions   LinkInstitution[]      @relation("LinkInstitutionToUser")
+}
+
+model DocumentId {
+  id        String            @id @default(uuid())
+  userId    String            @unique
+  value     String            @db.VarChar(255)
+  type      KYC_DOCUMENT_TYPE
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id])
+}
+
+model OTP {
+  id          String                 @id @default(uuid())
+  userId      String                  
+  code        String                 @db.VarChar(255)
+  phoneNumber String                 @db.VarChar(160)
+  email       String                 @db.VarChar(160)
+  purpose     OTP_GENERATION_PURPOSE
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  expiresIn   Int                    @default(7200)
+  status      OTP_STATUS             @default(IDLE)
+  user        User                   @relation(fields: [userId], references: [id])
+}
+
+model LinkedAccount {
+  id                 String                           @id @default(uuid())
+  plaidAccountId     String                        @unique @db.VarChar(255)
+  userId             String
+  name               String?                       @db.VarChar(255)
+  officialName       String?                       @db.VarChar(255)
+  mask               String?                       @db.VarChar(255)
+  type               String?
+  subtype            String?                       @db.VarChar(255)
+  verificationStatus LinkAccountVerificationStatus @default(pending_automatic_verification)
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  plaidInstitutionId String
+  balances           Balances?
+  linkInstitution    LinkInstitution               @relation(fields: [plaidInstitutionId], references: [plaidInstitutionId])
+  user               User                          @relation(fields: [userId], references: [id])
+}
+
+model Balances {
+  id                     String           @id @default(uuid())
+  available              Int?
+  current                Int?
+  limit                  Int?
+  isoCurrencyCode        String?       @db.VarChar(255)
+  unofficialCurrencyCode String?       @db.VarChar(255)
+  plaidAccountId         String        @unique
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  linkedAccount          LinkedAccount @relation(fields: [plaidAccountId], references: [plaidAccountId])
+}
+
+model LinkInstitution {
+  id                 Int             @id @default(autoincrement())
+  plaidInstitutionId String          @unique @db.VarChar(255)
+  name               String          @db.VarChar(255)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  accounts           LinkedAccount[]
+  users              User[]          @relation("LinkInstitutionToUser")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  street    String   @db.VarChar(255)
+  street2   String?  @db.VarChar(255)
+  city      String?  @db.VarChar(255)
+  state     String?  @db.VarChar(255)
+  postCode  String   @db.VarChar(255)
+  country   String   @db.VarChar(255)
+  region    String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model IdentityVerification {
+  id                             String                             @id @default(uuid())
+  plaidIdvId                     String                          @unique @db.VarChar(255)
+  plaidUserId                    String
+  userId                         String
+  shareable_url                  String?                         @db.VarChar(255)
+  verificationStatus             String?                         @db.VarChar(255)
+  templateId                     String
+  watchlist_screening_id         String?
+  redacted_at                    String?
+  request_id                     String?
+  createdAt                      DateTime                        @default(now())
+  updatedAt                      DateTime                        @updatedAt
+  template                       IdvTemplate                     @relation(fields: [templateId], references: [id])
+  user                           User                            @relation(fields: [userId], references: [id])
+  idvDocumentaryVerificationStep IdvDocumentaryVerificationStep?
+  idvKycCheckStep                IdvKycCheckStep?
+  idvRiskCheckStep               IdvRiskCheckStep?
+  idvSelfieCheckStep             IdvSelfieCheckStep?
+}
+
+model IdvTemplate {
+  id                    String                    @id @default(uuid())
+  plaidTemplateId       String
+  version               Int
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  identityVerifications IdentityVerification[]
+}
+
+model IdvDocumentaryVerificationStep {
+  id                     String                       @id @default(uuid())
+  stepName               IdvStepName               @default(documentary_verification)
+  status                 String?                   @db.VarChar(255)
+  attempt                Int?                      @default(autoincrement())
+  identityVerificationId String?                      @unique
+  redacted_at            String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  analysis               IdvDocumentAnalysis?
+  extractedData          IdvDocumentExtractedData?
+  images                 IdvDocumentImages?
+  identityVerification   IdentityVerification?     @relation(fields: [identityVerificationId], references: [id])
+}
+
+model IdvDocumentImages {
+  id                               String                            @id @default(uuid())
+  original_front                   String?                         @db.VarChar(255)
+  original_back                    String?                         @db.VarChar(255)
+  cropped_front                    String?                         @db.VarChar(255)
+  cropped_back                     String?                         @db.VarChar(255)
+  face                             String?                         @db.VarChar(255)
+  IdvDocumentaryVerificationStepId String?                            @unique
+  createdAt                        DateTime                        @default(now())
+  updatedAt                        DateTime                        @updatedAt
+  idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep? @relation(fields: [IdvDocumentaryVerificationStepId], references: [id])
+}
+
+model IdvDocumentExtractedData {
+  id                               Int                             @id @default(autoincrement())
+  id_number                        String?                         @db.VarChar(255)
+  category                         String?                         @db.VarChar(255)
+  expiration_date                  String?                         @db.VarChar(255)
+  issuing_country                  String?                         @db.VarChar(255)
+  issuing_region                   String?                         @db.VarChar(255)
+  date_of_birth                    String?                         @db.VarChar(255)
+  idvDocumentaryVerificationStepId String?                            @unique
+  createdAt                        DateTime                        @default(now())
+  updatedAt                        DateTime                        @updatedAt
+  address                          IdvDocumentExtractedAddress?
+  idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep? @relation(fields: [idvDocumentaryVerificationStepId], references: [id])
+}
+
+model IdvDocumentExtractedAddress {
+  id                         Int                       @id @default(autoincrement())
+  street                     String?                   @db.VarChar(255)
+  city                       String?                   @db.VarChar(255)
+  state                      String?                   @db.VarChar(255)
+  postal_code                String?                   @db.VarChar(255)
+  country                    String?                   @db.VarChar(255)
+  idvDocumentExtractedDataId Int?                      @unique
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+  idvDocumentExtractedData   IdvDocumentExtractedData? @relation(fields: [idvDocumentExtractedDataId], references: [id])
+}
+
+model IdvDocumentAnalysis {
+  id                               Int                               @id @default(autoincrement())
+  idvDocumentaryVerificationStepId String?                              @unique
+  createdAt                        String?
+  authenticity                     Authenticity?
+  image_quality                    ImageQuality?
+  redacted_at                      String?
+  idvDocumentaryVerificationStep   IdvDocumentaryVerificationStep?   @relation(fields: [idvDocumentaryVerificationStepId], references: [id])
+  extracted_data                   IdvDocumentExtractedAnalysisData?
+}
+
+model IdvDocumentExtractedAnalysisData {
+  id                               String                  @id @default(uuid())
+  idvDocumentAnalysisId            Int?                 @unique
+  name                             Authenticity?
+  date_of_birth                    Authenticity?
+  expiration_date                  Expiration?
+  issing_country                   Authenticity?
+  createdAt                        DateTime             @default(now())
+  updatedAt                        DateTime             @updatedAt
+  idvDocumentExtractedAnalysisData IdvDocumentAnalysis? @relation(fields: [idvDocumentAnalysisId], references: [id])
+}
+
+model IdvSelfieCheckStep {
+  id                     String                   @id @default(uuid())
+  stepName               IdvStepName           @default(selfie_check)
+  status                 String?               @db.VarChar(255)
+  attempt                Int?                  @default(autoincrement())
+  identityVerificationId String?                  @unique
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  analysis               IdvSelfieAnalysis?
+  capture                IdvSelfieCapture?
+  identityVerification   IdentityVerification? @relation(fields: [identityVerificationId], references: [id])
+}
+
+model IdvSelfieCapture {
+  id                   String                @id @default(uuid())
+  image_url            String?             @db.VarChar(255)
+  video_url            String?             @db.VarChar(255)
+  idvSelfieCheckStepId String?                @unique
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  idvSelfieCheckStep   IdvSelfieCheckStep? @relation(fields: [idvSelfieCheckStepId], references: [id])
+}
+
+model IdvSelfieAnalysis {
+  id                   String                 @id @default(uuid())
+  document_comparison  Authenticity?
+  idvSelfieCheckStepId String?                @unique
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  idvSelfieCheckStep   IdvSelfieCheckStep? @relation(fields: [idvSelfieCheckStepId], references: [id])
+}
+
+model IdvKycCheckStep {
+  id                     String                   @id @default(uuid())
+  stepName               IdvStepName           @default(kyc_check)
+  status                 String?               @db.VarChar(255)
+  name                   Authenticity?
+  id_number              Authenticity?
+  date_of_birth          Authenticity?
+  identityVerificationId String?                  @unique
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  address                IdvKycAddress?
+  identityVerification   IdentityVerification? @relation(fields: [identityVerificationId], references: [id])
+  phone_number           IdvKycPhoneNumber?
+}
+
+model IdvKycAddress {
+  id                String                @id @default(uuid())
+  IdvKycCheckStepId String?               @unique
+  summary           Authenticity?
+  po_box            Binary?
+  type              IdvKycAddressType?
+  IdvKycCheckStep   IdvKycCheckStep?   @relation(fields: [IdvKycCheckStepId], references: [id])
+}
+
+model IdvKycPhoneNumber {
+  id                String             @id @default(uuid())
+  IdvKycCheckStepId String?             @unique
+  summary           Authenticity?
+  area_code         Authenticity?
+  IdvKycCheckStep   IdvKycCheckStep? @relation(fields: [IdvKycCheckStepId], references: [id])
+}
+
+model IdvRiskCheckStep {
+  id                     String                   @id @default(uuid())
+  stepName               IdvStepName           @default(risk_check)
+  status                 String?               @db.VarChar(255)
+  linked_services        String[]
+  identityVerificationId String?                  @unique
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  identity_abuse_signals IdentityAbuseSignals?
+  behaviour              IdvRiskBehaviour?
+  identityVerification   IdentityVerification? @relation(fields: [identityVerificationId], references: [id])
+  devices                IdvRiskDevice?
+  email                  IdvRiskEmail?
+}
+
+model IdvRiskBehaviour {
+  id                  String               @id @default(uuid())
+  IdvRiskStepCheckId  String?              @unique
+  user_interaction    UserInteraction?
+  fraud_ring_detected Binary?
+  bot_detected        Binary?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
-  plaidClientId       String?           @db.VarChar(255)
-  documentId          DocumentId?
+  IdvRiskStepCheck    IdvRiskCheckStep? @relation(fields: [IdvRiskStepCheckId], references: [id])
+}
+
+model IdvRiskEmail {
+  id                             String               @id @default(uuid())
+  IdvRiskCheckStepId             String?              @unique
+  is_deliverable                 Binary?
+  breach_count                   Int?
+  first_breached_at              String?
+  last_breached_at               String?
+  domain_registered_at           String?
+  domain_is_free_provider        Binary?
+  domain_is_custom               Binary?
+  domain_is_disposable           Binary?
+  top_level_domain_is_suspicious Binary?
+  linked_services                String[]
+  createdAt                      DateTime          @default(now())
+  updatedAt                      DateTime          @updatedAt
+  IdvRiskCheckStep               IdvRiskCheckStep? @relation(fields: [IdvRiskCheckStepId], references: [id])
+}
+
+model IdvRiskDevice {
+  id                 String               @id @default(uuid())
+  idvRiskCheckStepId String?              @unique
+  ip_proxy_type      String?
+  ip_spam_list_count Int?
+  ip_timezone_offset String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  idvRiskCheckStep   IdvRiskCheckStep? @relation(fields: [idvRiskCheckStepId], references: [id])
+}
+
+enum KYC_DOCUMENT_TYPE {
+  PASSPORT
+  DRIVING_LICENSE
+}
+
+model IdentityAbuseSignals {
+  id                       String               @id @default(uuid())
+  idvRiskCheckStepId       String?              @unique
+  syntentic_identity_score Int?
+  stolen_identity_score    Int?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  idvRiskCheckStep         IdvRiskCheckStep? @relation(fields: [idvRiskCheckStepId], references: [id])
 }
 
 enum AuthMethod {
   AWS_COGNITO
+  NATIVE_AUTH
 }
 
 enum KYCStatus {
@@ -39,64 +373,26 @@ enum KYCStatus {
   rejected
 }
 
-model DocumentId {
-  id        Int   @id @default(autoincrement())
-  docId    Int      @unique
-  userId    Int      @unique
-  user      User     @relation(fields: [userId], references: [id])
-  value     String   @db.VarChar(255)
-  type      String   @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model LinkedAccount {
-  id                 Int                           @id @default(autoincrement())
-  plaidAccountId     String                        @unique @db.VarChar(255)
-  userId             Int                           
-  user               User                          @relation(fields: [userId], references: [id])
-  name               String?                       @db.VarChar(255)
-  officialName       String?                       @db.VarChar(255)
-  mask               String?                       @db.VarChar(255) // last 2-4 alphanumeric characters of an account's official account number
-  type               String?
-  subtype            String?                       @db.VarChar(255)
-  verificationStatus LinkAccountVerificationStatus @default(pending_automatic_verification)
-  balances           Balances?
-  createdAt          DateTime                      @default(now())
-  updatedAt          DateTime                      @updatedAt
-  plaidInstitutionId  String                       
-  linkInstitution    LinkInstitution               @relation(fields: [plaidInstitutionId], references: [plaidInstitutionId])
-}
-
-model Balances {
-  id                     Int           @id @default(autoincrement())
-  available              Int?       
-  current                Int?       
-  limit                  Int?       
-  isoCurrencyCode        String?        @db.VarChar(255)
-  unofficialCurrencyCode String?        @db.VarChar(255)
-  plaidAccountId         String        @unique
-  linkedAccount          LinkedAccount @relation(fields: [plaidAccountId], references: [plaidAccountId])
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
-}
-
-model LinkInstitution {
-  id                 Int             @id @default(autoincrement())
-  plaidInstitutionId String          @unique @db.VarChar(255)
-  name               String          @db.VarChar(255)
-  users              User[]
-  accounts           LinkedAccount[]
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-}
-
 enum LinkAccountType {
   depository
   credit
   loan
   investment
   other
+}
+
+enum OTP_GENERATION_PURPOSE {
+  LOGIN
+  RESET_PASSWORD
+  CONFIRM_EMAIL
+  CONFIRM_PHONE_NUMBER
+  CREATE_ACCOUNT
+}
+
+enum OTP_STATUS {
+  IDLE
+  REVOKED
+  VALIDATED
 }
 
 enum LinkAccountSubtype {
@@ -174,25 +470,51 @@ enum LinkAccountVerificationStatus {
   failed
 }
 
-model Address {
-  id        String   @id @default(uuid())
-  street    String   @db.VarChar(255)
-  street2   String   @db.VarChar(255)
-  city      String   @db.VarChar(255)
-  state     String   @db.VarChar(255)
-  postCode  String   @db.VarChar(255)
-  country   String   @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    Int      @unique
-  user      User     @relation(fields: [userId], references: [id])
+enum IdvStepName {
+  documentary_verification
+  accept_tos
+  verify_sms
+  kyc_check
+  selfie_check
+  watchlist_screening
+  risk_check
 }
 
-generator client {
-  provider = "prisma-client-js"
+enum Authenticity {
+  match
+  partial_match
+  no_match
+  no_data
+  no_input
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+enum ImageQuality {
+  high
+  medium
+  low
+}
+
+enum Expiration {
+  expired
+  not_expired
+  no_data
+}
+
+enum Binary {
+  yes
+  no
+  no_data
+}
+
+enum IdvKycAddressType {
+  residential
+  commercial
+  no_data
+}
+
+enum UserInteraction {
+  genuine
+  neutral
+  risky
+  no_data
 }

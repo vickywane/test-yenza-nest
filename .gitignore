@@ -36,7 +36,7 @@ lerna-debug.log*
 
 .env
 *.env
-*.env.development
+*.env.*
 
 *.toml
 *.sql
