@@ -1,5 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
-
+import { IsString, IsNotEmpty, IsBoolean } from 'class-validator';
 
 type DOCUMENT_TYPE = 'PASSPORT' | 'DRIVING_LICENSE';
 
@@ -23,4 +22,8 @@ export class UserKYCDto {
   @IsString()
   @IsNotEmpty()
   countryCode: string;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  kycConsent: boolean;
 }

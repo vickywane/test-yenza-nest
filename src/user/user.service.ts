@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma.service';
 import { UserDto } from 'src/dto/user.dto';
 import { UserKYCDto } from 'src/dto/kyc.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { PlaidService } from 'src/plaid/plaid.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private plaid: PlaidService,
+  ) {}
 
   async getUser(
     user: Partial<Pick<UserDto, 'email' | 'phoneNumber'> & { id: string }>,
@@ -16,7 +20,7 @@ export class UserService {
         where: {
           OR: [
             {
-              phoneNumber: user.phoneNumber, 
+              phoneNumber: user.phoneNumber,
             },
             {
               email: user.email,
@@ -79,6 +83,7 @@ export class UserService {
         throw new Error('User not found!');
       }
 
+      // update address table
       await this.prisma?.address.upsert({
         where: {
           userId,
@@ -96,7 +101,8 @@ export class UserService {
         },
       });
 
-      return await this.prisma?.documentId.upsert({
+      // update document table
+      await this.prisma?.documentId.upsert({
         where: {
           userId,
         },
@@ -110,6 +116,25 @@ export class UserService {
           userId,
         },
       });
+
+      const updatedUser = await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          idvUserConsent: kycDetails.kycConsent,
+          idvUserConsentDate: new Date().toISOString(),
+          countryCode: kycDetails.countryCode,
+        },
+      });
+
+      try {
+        await this.plaid.createIdentityVerification(userId);
+      } catch (error) {
+        console.log('plaid-kyc-error', error);
+      }
+
+      return updatedUser;
     } catch (error) {
       console.log('error', error);
       throw new Error(error);

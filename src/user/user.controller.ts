@@ -67,7 +67,7 @@ export class UserController {
         userId: params.userId,
         kycDetails: body,
       });
-
+      console.log('kyc-success');
       res.status(200).json({ message: 'kyc details recorded.' });
     } catch (error) {
       next(error);
