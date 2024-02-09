@@ -12,6 +12,7 @@ import { UserService } from './user/user.service';
 import { AuthService } from './auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { OtpService } from './services/otp.service';
+import { RecipientModule } from './recipient/recipient.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { OtpService } from './services/otp.service';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '7200s' },
     }),
+    RecipientModule,
   ],
   controllers: [AppController, AuthController, UserController],
   providers: [
