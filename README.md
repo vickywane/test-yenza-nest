@@ -42,6 +42,6 @@ docker compose up -d
 ```
 
 ### Start Swagger
-- To view the API endpoints in Swagger, once you start the NestJS app (see instruction above), you can go to `http://localhost:3000/api`
+- To view the API endpoints in Swagger, once you start the NestJS app (see instructions above), you can go to `http://localhost:3000/api`
 
 # Troubleshooting
