@@ -346,6 +346,25 @@ model IdvRiskDevice {
   idvRiskCheckStep   IdvRiskCheckStep? @relation(fields: [idvRiskCheckStepId], references: [id])
 }
 
+model Recipient {
+  id            String    @id @default(uuid())
+  firstName     String    @db.VarChar(255)
+  lastName      String    @db.VarChar(255)
+  accountName   String    @db.VarChar(255)
+  accountNumber String    @db.VarChar(255)
+  currency      String    @db.VarChar(255)
+  country       String    @db.VarChar(255)
+  countryName   String    @db.VarChar(255)
+  type          String    @db.VarChar(255)
+  bank          String    @db.VarChar(255)
+  phone         String    @db.VarChar(255)
+  userId        String    @db.VarChar(255)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
+  deletedAt     DateTime  @default(now())
+}
+
+
 enum KYC_DOCUMENT_TYPE {
   PASSPORT
   DRIVING_LICENSE
