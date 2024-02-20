@@ -47,3 +47,5 @@ docker compose up -d
 # Troubleshooting
 
 # Deployment
+
+Project is deployed on AWS.
