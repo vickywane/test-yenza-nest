@@ -1,0 +1,12 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+       - npm install
+       - npm run build
+      # - npm run start:prod
+
+artifacts:
+  files:
+    - '**/*'
